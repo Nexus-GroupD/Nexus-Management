@@ -1,0 +1,7 @@
+export interface Shift {
+  shift_ID: number;
+  date: string;
+  start_time: string;
+  end_time: string;
+  person_ID?: number;
+}
