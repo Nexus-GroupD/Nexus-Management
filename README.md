@@ -6,10 +6,7 @@ streamline workplace planning.
 
 ## Current Status
 
-Nexus is currently in its **early development stage**. There is no
-downloadable version or full release available yet. Foundational
-planning and initial development of the core scheduling features are in
-progress.
+Nexus is currently in its **active development stage**. The foundational backend and database layers have been implemented, and core scheduling functionality is in progress.
 
 ## Purpose
 
@@ -20,6 +17,15 @@ businesses to:
 -   View shift assignments in a centralized system
 -   Reduce scheduling conflicts
 -   Improve overall team organization
+
+## Tech Stack
+
+-  Frontend: TypeScript
+-  Backend: Node.js + TypeScript
+-  Database: SQLite
+-  ORM: Prisma
+-  Version Control: GitHub
+-  Project Management: Agile Scrum (GitHub Projects)
 
 ## Planned Features
 
@@ -42,8 +48,8 @@ Although Nexus is still under development, contributors and testers may run the 
 ### Clone the repository
 
 ```bash
-git clone https://github.com/your-org/nexus.git
-cd nexus
+git clone https://github.com/Nexus-GroupD/Nexus-Management.git
+cd Nexus-Management
 ```
 
 ### Install dependencies
@@ -55,7 +61,7 @@ npm install
 ### Run development build
 
 ```bash
-npm start
+npm run dev
 ```
 
 > Note: Exact setup steps may evolve as the architecture stabilizes.
