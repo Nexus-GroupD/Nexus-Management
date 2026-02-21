@@ -1,0 +1,143 @@
+body {
+  background-color: #f5f5f5;
+}
+
+.schedule-page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 5rem 2rem 2rem 2rem;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.schedule-header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.subtitle {
+  color: #48bb78;
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.shifts-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
+}
+
+.shift-card {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
+  position: relative;
+  overflow: visible;
+}
+
+.shift-card:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transform: translateY(-2px);
+  z-index: 1;
+}
+
+.shift-card.dropdown-open {
+  z-index: 50;
+}
+
+.shift-date {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #2d3748;
+  margin-bottom: 0.75rem;
+}
+
+.shift-time {
+  font-size: 1rem;
+  color: #4a5568;
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background: #f7fafc;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.assignment-container {
+  position: relative;
+}
+
+.shift-assignment {
+  font-size: 0.95rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  background: #48bb78;
+  color: white;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.2s ease;
+}
+
+.shift-assignment:hover {
+  background: #38a169;
+}
+
+.shift-assignment.unassigned {
+  background: #fc8181;
+}
+
+.shift-assignment.unassigned:hover {
+  background: #f56565;
+}
+
+.dropdown-arrow {
+  font-size: 0.7rem;
+  margin-left: 0.5rem;
+}
+
+.assignment-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+  overflow: hidden;
+}
+
+.dropdown-item {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  border-bottom: 1px solid #f7fafc;
+  color: #2d3748;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background: #f7fafc;
+}
+
+.dropdown-item.unassign {
+  color: #e53e3e;
+  font-weight: 500;
+}
+
+.dropdown-item.unassign:hover {
+  background: #fff5f5;
+}
