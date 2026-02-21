@@ -1,10 +1,14 @@
+import Navbar from './components/Navbar';
 import Schedule from './pages/Schedule';
 
 function App() {
   return (
-    <div className="App">
-      <Schedule />
-    </div>
+    <>
+      <Navbar pageTitle="Schedule" />
+      <div className="App">
+        <Schedule />
+      </div>
+    </>
   );
 }
 

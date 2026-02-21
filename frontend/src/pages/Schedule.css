@@ -5,7 +5,7 @@ body {
 .schedule-page {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 5rem 2rem 2rem 2rem; /* Added top padding */
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
 }
 
@@ -14,15 +14,12 @@ body {
   text-align: center;
 }
 
-.schedule-header h1 {
-  font-size: 2.5rem;
-  color: #07ee39;
-  margin-bottom: 0.5rem;
-}
 
 .subtitle {
-  color: #718096;
-  font-size: 1.1rem;
+  color: #48bb78;
+  font-size: 1.8rem;
+  font-weight: 600;
+  margin: 0;
 }
 
 .shifts-container {
@@ -38,11 +35,21 @@ body {
   padding: 1.5rem;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
   transition: all 0.2s ease;
+  position: relative;
+  overflow: visible; /* Changed from default */
 }
 
 .shift-card:hover {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   transform: translateY(-2px);
+  z-index: 1; 
+}
+
+.shift-card.dropdown-open {
+  z-index: 50;
+}
+.shifts-container > .shift-card:last-child .dropdown-arrow {
+  transform: rotate(180deg);
 }
 
 .shift-date {
@@ -73,4 +80,88 @@ body {
 
 .shift-assignment.unassigned {
   background: #fc8181;
+}
+
+.assignment-container {
+  position: relative;
+}
+
+.shift-assignment {
+  font-size: 0.95rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 4px;
+  background: #48bb78;
+  color: white;
+  font-weight: 500;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: background 0.2s ease;
+}
+
+.shift-assignment:hover {
+  background: #38a169;
+}
+
+.shift-assignment.unassigned {
+  background: #fc8181;
+}
+
+.shift-assignment.unassigned:hover {
+  background: #f56565;
+}
+
+.dropdown-arrow {
+  font-size: 0.7rem;
+  margin-left: 0.5rem;
+}
+
+.assignment-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  margin-top: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  z-index: 100; /* Increased from 10 */
+  overflow: hidden;
+}
+
+.shifts-container > .shift-card:last-child .assignment-dropdown {
+  bottom: 100%;
+  top: auto;
+  margin-top: 0;
+  margin-bottom: 0.5rem;
+}
+
+.dropdown-item {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  border-bottom: 1px solid #f7fafc;
+  color: #2d3748;
+}
+
+.dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.dropdown-item:hover {
+  background: #f7fafc;
+}
+
+.dropdown-item.unassign {
+  color: #e53e3e;
+  font-weight: 500;
+}
+
+.dropdown-item.unassign:hover {
+  background: #fff5f5;
 }
