@@ -27,8 +27,8 @@ jobs:
         run: npx tsc --noEmit
 
       - name: Run lint
-        run: npm run lint
-
+        run: npx eslint 
+  
       - name: Run tests
         run: npm test -- --passWithNoTests
 
