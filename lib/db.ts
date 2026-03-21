@@ -1,11 +1,21 @@
 /**
  * lib/db.ts
- * Database connection stub.
- * SQLite via better-sqlite3 is supported in local/self-hosted environments.
- * For Vercel deployment, a hosted database (e.g. Vercel Postgres) is required.
+ * Database stub for Vercel deployment.
+ * Returns null — all API routes handle this gracefully.
  */
 
-export default function getDb() {
+export interface Database {
+  prepare: (sql: string) => {
+    get: (...params: unknown[]) => unknown;
+    all: (...params: unknown[]) => unknown[];
+    run: (...params: unknown[]) => { lastInsertRowid: number };
+  };
+  exec: (sql: string) => void;
+  pragma: (pragma: string) => void;
+  transaction: (fn: () => void) => () => void;
+}
+
+export default function getDb(): Database | null {
   console.warn('[db] No database configured for this environment.');
   return null;
 }
