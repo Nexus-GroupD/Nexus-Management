@@ -52,7 +52,7 @@ const Navbar: React.FC<NavbarProps> = ({ pageTitle = 'Nexus Management' }) => {
         </button>
 
         <h1 className="navbar-title">
-          <span className="navbar-logo">N</span>
+          <span className="navbar-logo">N </span>
           {pageTitle}
         </h1>
 
