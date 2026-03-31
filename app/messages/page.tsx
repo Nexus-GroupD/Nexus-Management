@@ -1,154 +1,182 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
+
+const DEMO_EMPLOYEES = [
+  { id: 1, name: "Alex Rivera", role: "Manager" },
+  { id: 2, name: "Jordan Lee", role: "Employee" },
+  { id: 3, name: "Sam Patel", role: "Employee" },
+  { id: 4, name: "Casey Morgan", role: "Employee" },
+];
 
 type Message = {
   id: number;
   content: string;
+  senderId: number;
+  createdAt: string;
   sender: {
+    id: number;
+    name: string;
+  };
+};
+
+type Participant = {
+  employeeId: number;
+  employee: {
+    id: number;
     name: string;
   };
 };
 
 type Conversation = {
   id: number;
-  participants: {
-    employee: {
-      id: number;
-      name: string;
-    };
-  }[];
+  participants: Participant[];
   messages: Message[];
 };
 
-const DEMO_EMPLOYEES = [
-  { id: 1, name: "Alex Rivera" },
-  { id: 2, name: "Jordan Lee" },
-  { id: 3, name: "Sam Patel" },
-  { id: 4, name: "Casey Morgan" },
-];
-
 export default function MessagesPage() {
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState(1);
+  const [selectedId, setSelectedId] = useState<number>(1);
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversation, setSelectedConversation] =
-    useState<Conversation | null>(null);
 
   useEffect(() => {
-    fetch(`/api/conversations?employeeId=${selectedEmployeeId}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setConversations(data);
-        setSelectedConversation(data[0] || null);
-      });
-  }, [selectedEmployeeId]);
+    async function loadConversations() {
+      const res = await fetch(`/api/conversations?employeeId=${selectedId}`);
+      const data = await res.json();
+      setConversations(data);
+    }
+
+    loadConversations();
+  }, [selectedId]);
+
+  const selectedConversation = conversations[0];
 
   return (
     <>
       <Navbar pageTitle="Messages" />
-
-      <div style={{ padding: "1.5rem" }}>
-        {/* Employee selector */}
-        <div style={{ marginBottom: "1rem" }}>
-          <span style={{ marginRight: "0.5rem", fontWeight: "bold" }}>
-            VIEWING AS:
-          </span>
-          {DEMO_EMPLOYEES.map((emp) => (
-            <button
-              key={emp.id}
-              onClick={() => setSelectedEmployeeId(emp.id)}
-              style={{
-                marginRight: "0.5rem",
-                padding: "0.4rem 0.8rem",
-                borderRadius: "999px",
-                border: "none",
-                cursor: "pointer",
-                background:
-                  selectedEmployeeId === emp.id ? "#c6f6d5" : "#1a202c",
-                color:
-                  selectedEmployeeId === emp.id ? "#22543d" : "#e2e8f0",
-              }}
-            >
-              {emp.name}
-            </button>
-          ))}
+      <main className="messages-page">
+        <div className="messages-selector">
+          <label className="selector-label">Viewing as:</label>
+          <div className="selector-pills">
+            {DEMO_EMPLOYEES.map((emp) => (
+              <button
+                key={emp.id}
+                className={`selector-pill ${selectedId === emp.id ? "active" : ""}`}
+                onClick={() => setSelectedId(emp.id)}
+              >
+                {emp.name}
+              </button>
+            ))}
+          </div>
         </div>
 
-        {/* Layout */}
         <div className="messages-grid">
-          {/* Sidebar */}
-          <div className="messages-sidebar">
+          <aside className="messages-sidebar">
             <h2>Conversations</h2>
+            {conversations.length === 0 ? (
+              <p>No conversations yet.</p>
+            ) : (
+              conversations.map((conversation) => {
+                const otherNames = conversation.participants
+                  .filter((p) => p.employeeId !== selectedId)
+                  .map((p) => p.employee.name)
+                  .join(", ");
 
-            {conversations.length === 0 && <p>No conversations yet.</p>}
+                const lastMessage =
+                  conversation.messages[conversation.messages.length - 1];
 
-            {conversations.map((conv) => {
-              const other = conv.participants.find(
-                (p) => p.employee.id !== selectedEmployeeId
-              )?.employee;
+                return (
+                  <div key={conversation.id} className="conversation-card">
+                    <strong>{otherNames || "Conversation"}</strong>
+                    <p>{lastMessage?.content ?? "No messages yet"}</p>
+                  </div>
+                );
+              })
+            )}
+          </aside>
 
-              const lastMessage =
-                conv.messages[conv.messages.length - 1];
-
-              return (
-                <div
-                  key={conv.id}
-                  className="conversation-card"
-                  onClick={() => setSelectedConversation(conv)}
-                >
-                  <strong>{other?.name}</strong>
-                  <p>{lastMessage?.content}</p>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Messages */}
-          <div className="messages-panel">
-            {!selectedConversation && <p>Select a conversation.</p>}
-
-            {selectedConversation && (
+          <section className="messages-panel">
+            {!selectedConversation ? (
+              <p>Select a conversation.</p>
+            ) : (
               <>
                 <h2>
-                  {
-                    selectedConversation.participants.find(
-                      (p) => p.employee.id !== selectedEmployeeId
-                    )?.employee.name
-                  }
+                  {selectedConversation.participants
+                    .filter((p) => p.employeeId !== selectedId)
+                    .map((p) => p.employee.name)
+                    .join(", ")}
                 </h2>
 
                 <div className="message-list">
-                  {selectedConversation.messages.map((msg) => {
-                    const isMine =
-                      msg.sender.name ===
-                      DEMO_EMPLOYEES.find(
-                        (e) => e.id === selectedEmployeeId
-                      )?.name;
+                  {selectedConversation.messages.map((message) => {
+                    const mine = message.senderId === selectedId;
 
                     return (
                       <div
-                        key={msg.id}
-                        className={`message-bubble ${
-                          isMine ? "mine" : "theirs"
-                        }`}
+                        key={message.id}
+                        className={`message-bubble ${mine ? "mine" : "theirs"}`}
                       >
-                        <div className="message-sender">
-                          {msg.sender.name}
-                        </div>
-                        <div>{msg.content}</div>
+                        <div className="message-sender">{message.sender.name}</div>
+                        <div>{message.content}</div>
                       </div>
                     );
                   })}
                 </div>
               </>
             )}
-          </div>
+          </section>
         </div>
-      </div>
+      </main>
 
-      {/* Styles */}
-      <style jsx>{`
+      <style>{`
+        .messages-page {
+          max-width: 1100px;
+          margin: 0 auto;
+          padding: 6rem 1.5rem 3rem;
+          display: flex;
+          flex-direction: column;
+          gap: 1.5rem;
+        }
+
+        .messages-selector {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          flex-wrap: wrap;
+        }
+
+        .selector-label {
+          font-size: 0.8rem;
+          color: #718096;
+          font-weight: 600;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
+
+        .selector-pills {
+          display: flex;
+          gap: 0.5rem;
+          flex-wrap: wrap;
+        }
+
+        .selector-pill {
+          background: #1a1f2e;
+          border: 1px solid rgba(255,255,255,0.08);
+          color: #a0aec0;
+          padding: 0.35rem 0.85rem;
+          border-radius: 999px;
+          font-size: 0.8rem;
+          font-weight: 500;
+          cursor: pointer;
+        }
+
+        .selector-pill.active,
+        .selector-pill:hover {
+          background: rgba(72,187,120,0.12);
+          border-color: rgba(72,187,120,0.3);
+          color: #48bb78;
+        }
+
         .messages-grid {
           display: grid;
           grid-template-columns: 320px 1fr;
@@ -167,7 +195,12 @@ export default function MessagesPage() {
           margin-bottom: 1rem;
           color: #f7fafc;
         }
+          .messages-sidebar p,
+.messages-panel p {
+  color: #e2e8f0;
+}
 
+        /* ✅ FIX ONLY THIS SECTION */
         .conversation-card {
           padding: 0.75rem;
           border-radius: 10px;
@@ -218,6 +251,12 @@ export default function MessagesPage() {
           font-size: 0.75rem;
           color: #a0aec0;
           margin-bottom: 0.25rem;
+        }
+
+        @media (max-width: 700px) {
+          .messages-grid {
+            grid-template-columns: 1fr;
+          }
         }
       `}</style>
     </>
