@@ -14,6 +14,7 @@ const NAV_LINKS = [
   { href: '/schedule',  label: 'Schedule',  icon: '📅' },
   { href: '/dashboard', label: 'Dashboard', icon: '◈' },
   { href: '/history',   label: 'History',   icon: '⏱' },
+  { href: '/messages',  label: 'Messages',  icon: '✉' },
 ];
 
 const Navbar: React.FC<NavbarProps> = ({ pageTitle = 'Nexus Management' }) => {
