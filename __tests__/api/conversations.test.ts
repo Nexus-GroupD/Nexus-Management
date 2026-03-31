@@ -1,7 +1,15 @@
-import { GET } from "@/app/api/conversations/route";
-import { prisma } from "@/lib/prisma";
+/// <reference types="jest" />
 
-jest.mock("@/lib/prisma", () => ({
+jest.mock("next/server", () => ({
+  NextResponse: {
+    json: (data: unknown, init?: { status?: number }) => ({
+      status: init?.status ?? 200,
+      json: async () => data,
+    }),
+  },
+}));
+
+jest.mock("../../lib/prisma", () => ({
   prisma: {
     conversation: {
       findMany: jest.fn(),
@@ -9,13 +17,16 @@ jest.mock("@/lib/prisma", () => ({
   },
 }));
 
+import { GET } from "../../app/api/conversations/route";
+import { prisma } from "../../lib/prisma";
+
 describe("GET /api/conversations", () => {
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   it("returns 400 if employeeId is missing", async () => {
-    const req = new Request("http://localhost:3000/api/conversations");
+    const req = { url: "http://localhost:3000/api/conversations" } as Request;
 
     const res = await GET(req);
     const data = await res.json();
@@ -25,9 +36,9 @@ describe("GET /api/conversations", () => {
   });
 
   it("returns 400 if employeeId is not a number", async () => {
-    const req = new Request(
-      "http://localhost:3000/api/conversations?employeeId=abc"
-    );
+    const req = {
+      url: "http://localhost:3000/api/conversations?employeeId=abc",
+    } as Request;
 
     const res = await GET(req);
     const data = await res.json();
@@ -55,27 +66,26 @@ describe("GET /api/conversations", () => {
             id: 1,
             content: "Hi Jordan, can you cover the Friday evening shift?",
             senderId: 1,
-            createdAt: new Date("2026-03-31T10:00:00.000Z"),
+            createdAt: "2026-03-31T10:00:00.000Z",
             sender: { id: 1, name: "Alex Rivera" },
           },
         ],
       },
     ];
 
-    (prisma.conversation.findMany as jest.Mock).mockResolvedValue(
-      mockConversations
-    );
+    const findManyMock = prisma.conversation.findMany as jest.Mock;
+    findManyMock.mockResolvedValue(mockConversations);
 
-    const req = new Request(
-      "http://localhost:3000/api/conversations?employeeId=2"
-    );
+    const req = {
+      url: "http://localhost:3000/api/conversations?employeeId=2",
+    } as Request;
 
     const res = await GET(req);
     const data = await res.json();
 
     expect(res.status).toBe(200);
     expect(data).toEqual(mockConversations);
-    expect(prisma.conversation.findMany).toHaveBeenCalledWith({
+    expect(findManyMock).toHaveBeenCalledWith({
       where: {
         participants: {
           some: {
@@ -105,13 +115,12 @@ describe("GET /api/conversations", () => {
   });
 
   it("returns 500 if prisma throws an error", async () => {
-    (prisma.conversation.findMany as jest.Mock).mockRejectedValue(
-      new Error("Database failure")
-    );
+    const findManyMock = prisma.conversation.findMany as jest.Mock;
+    findManyMock.mockRejectedValue(new Error("Database failure"));
 
-    const req = new Request(
-      "http://localhost:3000/api/conversations?employeeId=2"
-    );
+    const req = {
+      url: "http://localhost:3000/api/conversations?employeeId=2",
+    } as Request;
 
     const res = await GET(req);
     const data = await res.json();

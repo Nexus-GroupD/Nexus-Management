@@ -21,11 +21,13 @@
         "name": "next"
       }
     ],
+    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./*"
       ]
     },
+    "types": ["jest", "node"],
     "target": "ES2017"
   },
   "include": [
@@ -33,7 +35,7 @@
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts"
-  ],
+, "__tests__/api/conversations.test.ts"  ],
   "exclude": [
     "node_modules"
   ]
