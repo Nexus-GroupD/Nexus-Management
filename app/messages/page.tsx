@@ -195,12 +195,12 @@ export default function MessagesPage() {
           margin-bottom: 1rem;
           color: #f7fafc;
         }
-          .messages-sidebar p,
-.messages-panel p {
-  color: #e2e8f0;
-}
+          
+        .messages-sidebar p,
+        .messages-panel p {
+        color: #e2e8f0;
+        }
 
-        /* ✅ FIX ONLY THIS SECTION */
         .conversation-card {
           padding: 0.75rem;
           border-radius: 10px;
