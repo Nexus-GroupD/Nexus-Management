@@ -15,7 +15,7 @@ const NAV_LINKS = [
   { href: '/dashboard', label: 'Dashboard', icon: '◈' },
   { href: '/history',   label: 'History',   icon: '⏱' },
   { href: '/messages',  label: 'Messages',  icon: '✉' },
-  { href: '/add-person', label: 'Add Person', icon: '➕' },
+  { href: '/add-person', label: 'Add Person' },
 ];
 
 const Navbar: React.FC<NavbarProps> = ({ pageTitle = 'Nexus Management' }) => {
