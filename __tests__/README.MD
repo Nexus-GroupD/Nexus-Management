@@ -78,7 +78,7 @@ npx jest `<path-to-test-file>`
 
 ## 🚀 Quick Start
 
-git clone <REPO_URL>
-cd Nexus-Management
-npm install
-npx jest `<path-to-test-file>`
+- git clone <REPO_URL>
+- cd Nexus-Management
+- npm install
+- npx jest `<path-to-test-file>`
