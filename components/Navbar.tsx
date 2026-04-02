@@ -14,6 +14,8 @@ const NAV_LINKS = [
   { href: '/schedule',  label: 'Schedule',  icon: '📅' },
   { href: '/dashboard', label: 'Dashboard', icon: '◈' },
   { href: '/history',   label: 'History',   icon: '⏱' },
+  { href: '/messages',  label: 'Messages',  icon: '✉' },
+   { href: '/add-person', label: 'Add Person', icon: '➕'  },
 ];
 
 const Navbar: React.FC<NavbarProps> = ({ pageTitle = 'Nexus Management' }) => {
@@ -52,7 +54,6 @@ const Navbar: React.FC<NavbarProps> = ({ pageTitle = 'Nexus Management' }) => {
         </button>
 
         <h1 className="navbar-title">
-          <span className="navbar-logo">N</span>
           {pageTitle}
         </h1>
 

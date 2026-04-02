@@ -14,18 +14,25 @@
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "better-sqlite3": "^12.8.0",
     "next": "^15",
     "react": "^18",
     "react-dom": "^18"
   },
   "devDependencies": {
     "@eslint/js": "^9.0.0",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20",
-    "@types/react": "^18",
-    "@types/react-dom": "^18",
+    "@types/react": "^18.3.28",
+    "@types/react-dom": "^18.3.7",
     "eslint": "^10.1.0",
+    "jest": "^30.3.0",
+    "jest-environment-jsdom": "^30.3.0",
     "prisma": "^5.10.2",
+    "ts-jest": "^29.4.6",
     "ts-node": "^10.9.2",
-    "typescript": "^5"
+    "typescript": "^5.9.3",
+    "undici": "^7.24.6"
   }
 }

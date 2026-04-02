@@ -19,6 +19,9 @@ model Employee {
   createdAt    DateTime     @default(now()) @map("created_at")
   shifts       Shift[]
   clockEntries ClockEntry[]
+
+  sentMessages  Message[]                 @relation("SentMessages")
+  conversations ConversationParticipant[]
 }
 
 model Shift {
@@ -40,3 +43,32 @@ model ClockEntry {
   employee        Employee  @relation(fields: [personId], references: [id], onDelete: Cascade)
 }
 
+model Conversation {
+  id           Int                       @id @default(autoincrement())
+  createdAt    DateTime                  @default(now())
+  updatedAt    DateTime                  @updatedAt
+  participants ConversationParticipant[]
+  messages     Message[]
+}
+
+model ConversationParticipant {
+  id             Int @id @default(autoincrement())
+  conversationId Int
+  employeeId     Int
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  employee     Employee     @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, employeeId])
+}
+
+model Message {
+  id             Int      @id @default(autoincrement())
+  conversationId Int
+  senderId       Int
+  content        String
+  createdAt      DateTime @default(now())
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       Employee     @relation("SentMessages", fields: [senderId], references: [id], onDelete: Cascade)
+}
