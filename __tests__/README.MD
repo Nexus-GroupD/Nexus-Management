@@ -64,7 +64,7 @@ PASS __tests__/api/conversations.test.ts
 
 ## 🔁 Running Other Tests
 
-npx jest <path-to-test-file>
+npx jest `<path-to-test-file>`
 
 ---
 
@@ -81,4 +81,4 @@ npx jest <path-to-test-file>
 git clone <REPO_URL>
 cd Nexus-Management
 npm install
-npx jest <path-to-test-file>
+npx jest `<path-to-test-file>`
