@@ -73,6 +73,8 @@ PASS __tests__/api/shifts.test.ts
 
 PASS __tests__/api/history.test.tsx
 
+PASS __tests__/components/navbar.test.tsx
+
 ---
 
 ## 🔁 Running Other Tests
