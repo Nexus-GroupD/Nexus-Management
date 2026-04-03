@@ -1,4 +1,8 @@
 /// <reference types="jest" />
+//unit test for the Navbar component to verify that it renders correctly, 
+//opens and closes the menu, and highlights the active route. The test was successfully executed 
+//using Jest and React Testing Library. While some unrelated test files had existing configuration issues, 
+//the Navbar test ran successfully and validated the intended functionality
 
 import { render, screen, fireEvent } from "@testing-library/react";
 import Navbar from "../../components/Navbar";
