@@ -48,6 +48,8 @@ cd Nexus-Management
 
 npm install
 
+npm install --save-dev jest ts-jest @types/jest jest-environment-jsdom undici @testing-library/jest-dom
+
 ---
 
 ## ▶️ Step 3: Run a Specific Test
