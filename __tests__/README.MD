@@ -39,7 +39,7 @@ Download: https://code.visualstudio.com/
 
 ## 📥 Step 1: Clone the Repository
 
-git clone <REPOSITORY_URL>
+git clone https://github.com/Nexus-GroupD/Nexus-Management.git
 cd Nexus-Management
 
 ---
@@ -58,6 +58,7 @@ npx jest \_\_tests\_\_/api/shifts.test.ts
 
 npx jest \_\_tests\_\_/api/chatbot.test.ts
 
+npx jest __tests__/time.test.ts
 ---
 
 ## ✅ Expected Output
