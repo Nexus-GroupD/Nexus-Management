@@ -56,6 +56,8 @@ npx jest \_\_tests\_\_/api/conversations.test.ts
 
 npx jest \_\_tests\_\_/api/shifts.test.ts
 
+npx jest __tests__/api/history.test.tsx
+
 npx jest \_\_tests\_\_/api/chatbot.test.ts
 
 npx jest __tests__/time.test.ts
@@ -66,6 +68,8 @@ npx jest __tests__/time.test.ts
 PASS __tests__/api/conversations.test.ts
 
 PASS __tests__/api/shifts.test.ts
+
+PASS __tests__/api/history.test.tsx
 
 ---
 
