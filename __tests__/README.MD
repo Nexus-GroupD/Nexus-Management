@@ -61,6 +61,8 @@ npx jest __tests__/api/history.test.tsx
 npx jest \_\_tests\_\_/api/chatbot.test.ts
 
 npx jest __tests__/time.test.ts
+
+npx jest __tests__/components/navbar.test.tsx
 ---
 
 ## ✅ Expected Output
