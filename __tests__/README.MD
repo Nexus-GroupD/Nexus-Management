@@ -60,7 +60,7 @@ npx jest \_\_tests\_\_/api/history.tests.tsx
 
 npx jest \_\_tests\_\_/api/chatbot.test.ts
 
-npx jest \_\_tests\_\_/time.test.ts
+npx jest \_\_tests\_\_/api/time.test.ts
 
 npx jest \_\_tests\_\_/components/navbar.test.tsx
 
