@@ -1,3 +1,7 @@
+/**
+ * Unit tests for getGreeting() in lib/time.ts
+ * Repository: https://github.com/Nexus-GroupD/Nexus-Management
+ */
 import { getGreeting } from '@/lib/time';
 
 describe('getGreeting()', () => {
