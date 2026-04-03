@@ -56,6 +56,8 @@ npx jest __tests__/api/conversations.test.ts
 
 npx jest __tests__/api/shifts.test.ts
 
+npx jest __tests__/api/chatbot.test.ts
+
 ---
 
 ## ✅ Expected Output
