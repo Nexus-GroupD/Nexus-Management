@@ -52,11 +52,11 @@ npm install
 
 ## ▶️ Step 3: Run a Specific Test
 
-npx jest __tests__/api/conversations.test.ts
+npx jest \_\_tests\_\_/api/conversations.test.ts
 
-npx jest __tests__/api/shifts.test.ts
+npx jest \_\_tests\_\_/api/shifts.test.ts
 
-npx jest __tests__/api/chatbot.test.ts
+npx jest \_\_tests\_\_/api/chatbot.test.ts
 
 ---
 
