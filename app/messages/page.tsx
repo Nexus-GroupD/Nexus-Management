@@ -38,18 +38,47 @@ type Conversation = {
 export default function MessagesPage() {
   const [selectedId, setSelectedId] = useState<number>(1);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
+  const [newMessage, setNewMessage] = useState("");
 
   useEffect(() => {
     async function loadConversations() {
       const res = await fetch(`/api/conversations?employeeId=${selectedId}`);
       const data = await res.json();
       setConversations(data);
+      if (data.length > 0 && !selectedConversationId) {
+        setSelectedConversationId(data[0].id);
+      }
     }
 
     loadConversations();
   }, [selectedId]);
 
-  const selectedConversation = conversations[0];
+  async function handleSend() {
+    if (!newMessage.trim() || !selectedConversationId) return;
+
+    await fetch("/api/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        conversationId: selectedConversationId,
+        senderId: selectedId,
+        content: newMessage,
+      }),
+    });
+
+    setNewMessage("");
+
+    const res = await fetch(`/api/conversations?employeeId=${selectedId}`);
+    const data = await res.json();
+    setConversations(data);
+  }
+
+  const selectedConversation = conversations.find(
+    (c) => c.id === selectedConversationId
+  );
 
   return (
     <>
@@ -86,7 +115,11 @@ export default function MessagesPage() {
                   conversation.messages[conversation.messages.length - 1];
 
                 return (
-                  <div key={conversation.id} className="conversation-card">
+                  <div
+                    key={conversation.id}
+                    className="conversation-card"
+                    onClick={() => setSelectedConversationId(conversation.id)}
+                  >
                     <strong>{otherNames || "Conversation"}</strong>
                     <p>{lastMessage?.content ?? "No messages yet"}</p>
                   </div>
@@ -122,6 +155,14 @@ export default function MessagesPage() {
                     );
                   })}
                 </div>
+                <div className="message-input">
+                  <input
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    placeholder="Type a message..."
+                  />
+                  <button onClick={handleSend}>Send</button>
+                </div>
               </>
             )}
           </section>
@@ -129,6 +170,27 @@ export default function MessagesPage() {
       </main>
 
       <style>{`
+      .message-input {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.message-input input {
+  flex: 1;
+  padding: 0.5rem;
+  border-radius: 8px;
+  border: none;
+}
+
+.message-input button {
+  background: #48bb78;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+}
         .messages-page {
           max-width: 1100px;
           margin: 0 auto;
