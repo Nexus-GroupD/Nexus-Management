@@ -42,6 +42,8 @@ export default function MessagesPage() {
     number | null
   >(null);
   const [newMessage, setNewMessage] = useState("");
+  const [newConversationEmployeeId, setNewConversationEmployeeId] =
+    useState<number>(2);
 
   useEffect(() => {
     async function loadConversations() {
@@ -55,7 +57,31 @@ export default function MessagesPage() {
 
     loadConversations();
   }, [selectedId]);
+  async function handleCreateConversation() {
+    if (!newConversationEmployeeId || newConversationEmployeeId === selectedId)
+      return;
 
+    const res = await fetch("/api/conversations", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        employeeId: selectedId,
+        otherEmployeeId: newConversationEmployeeId,
+      }),
+    });
+
+    const newConversation = await res.json();
+
+    const updatedRes = await fetch(
+      `/api/conversations?employeeId=${selectedId}`,
+    );
+    const updatedData = await updatedRes.json();
+
+    setConversations(updatedData);
+    setSelectedConversationId(newConversation.id);
+  }
   async function handleSend() {
     if (!newMessage.trim() || !selectedConversationId) return;
 
@@ -106,7 +132,28 @@ export default function MessagesPage() {
 
         <div className="messages-grid">
           <aside className="messages-sidebar">
-            <h2>Conversations</h2>
+            <h2>
+              Conversations{" "}
+              {conversations.length > 0 && `(${conversations.length})`}
+            </h2>
+            <div className="new-conversation">
+              <select
+                value={newConversationEmployeeId}
+                onChange={(e) =>
+                  setNewConversationEmployeeId(Number(e.target.value))
+                }
+              >
+                {DEMO_EMPLOYEES.filter((emp) => emp.id !== selectedId).map(
+                  (emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.name}
+                    </option>
+                  ),
+                )}
+              </select>
+
+              <button onClick={handleCreateConversation}>New</button>
+            </div>
             {conversations.length === 0 ? (
               <p>No conversations yet.</p>
             ) : (
@@ -166,6 +213,12 @@ export default function MessagesPage() {
                   <input
                     value={newMessage}
                     onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        handleSend();
+                      }
+                    }}
                     placeholder="Type a message..."
                   />
                   <button onClick={handleSend}>Send</button>
@@ -177,6 +230,28 @@ export default function MessagesPage() {
       </main>
 
       <style>{`
+        .new-conversation {
+          display: flex;
+          gap: 0.5rem;
+          margin-bottom: 1rem;
+        }
+
+        .new-conversation select {
+          flex: 1;
+          padding: 0.5rem;
+          border-radius: 8px;
+          border: none;
+        }
+
+        .new-conversation button {
+          background: #48bb78;
+          color: white;
+          border: none;
+          padding: 0.5rem 0.75rem;
+          border-radius: 8px;
+          cursor: pointer;
+        }
+
         .message-input {
           display: flex;
           gap: 0.5rem;

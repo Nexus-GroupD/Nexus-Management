@@ -59,3 +59,57 @@ export async function GET(req: Request) {
     );
   }
 }
+
+export async function POST(req: Request) {
+  try {
+    const { employeeId, otherEmployeeId } = await req.json();
+
+    if (!employeeId || !otherEmployeeId) {
+      return NextResponse.json(
+        { error: "employeeId and otherEmployeeId are required" },
+        { status: 400 }
+      );
+    }
+
+    if (Number(employeeId) === Number(otherEmployeeId)) {
+      return NextResponse.json(
+        { error: "Cannot start a conversation with yourself" },
+        { status: 400 }
+      );
+    }
+
+    const conversation = await prisma.conversation.create({
+      data: {
+        participants: {
+          create: [
+            { employeeId: Number(employeeId) },
+            { employeeId: Number(otherEmployeeId) },
+          ],
+        },
+      },
+      include: {
+        participants: {
+          include: {
+            employee: true,
+          },
+        },
+        messages: {
+          include: {
+            sender: true,
+          },
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
+      },
+    });
+
+    return NextResponse.json(conversation, { status: 201 });
+  } catch (error) {
+    console.error("Error creating conversation:", error);
+    return NextResponse.json(
+      { error: "Failed to create conversation" },
+      { status: 500 }
+    );
+  }
+}
