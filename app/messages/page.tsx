@@ -38,7 +38,9 @@ type Conversation = {
 export default function MessagesPage() {
   const [selectedId, setSelectedId] = useState<number>(1);
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversationId, setSelectedConversationId] = useState<number | null>(null);
+  const [selectedConversationId, setSelectedConversationId] = useState<
+    number | null
+  >(null);
   const [newMessage, setNewMessage] = useState("");
 
   useEffect(() => {
@@ -77,7 +79,7 @@ export default function MessagesPage() {
   }
 
   const selectedConversation = conversations.find(
-    (c) => c.id === selectedConversationId
+    (c) => c.id === selectedConversationId,
   );
 
   return (
@@ -149,7 +151,9 @@ export default function MessagesPage() {
                         key={message.id}
                         className={`message-bubble ${mine ? "mine" : "theirs"}`}
                       >
-                        <div className="message-sender">{message.sender.name}</div>
+                        <div className="message-sender">
+                          {message.sender.name}
+                        </div>
                         <div>{message.content}</div>
                       </div>
                     );
@@ -170,27 +174,28 @@ export default function MessagesPage() {
       </main>
 
       <style>{`
-      .message-input {
-  display: flex;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
+        .message-input {
+          display: flex;
+          gap: 0.5rem;
+          margin-top: 1rem;
+        }
 
-.message-input input {
-  flex: 1;
-  padding: 0.5rem;
-  border-radius: 8px;
-  border: none;
-}
+        .message-input input {
+          flex: 1;
+          padding: 0.5rem;
+          border-radius: 8px;
+          border: none;
+        }
 
-.message-input button {
-  background: #48bb78;
-  color: white;
-  border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  cursor: pointer;
-}
+        .message-input button {
+          background: #48bb78;
+          color: white;
+          border: none;
+          padding: 0.5rem 1rem;
+          border-radius: 8px;
+          cursor: pointer;
+        }
+
         .messages-page {
           max-width: 1100px;
           margin: 0 auto;
