@@ -93,7 +93,10 @@ export default function MessagesPage() {
               <button
                 key={emp.id}
                 className={`selector-pill ${selectedId === emp.id ? "active" : ""}`}
-                onClick={() => setSelectedId(emp.id)}
+                onClick={() => {
+                  setSelectedId(emp.id);
+                  setSelectedConversationId(null);
+                }}
               >
                 {emp.name}
               </button>
