@@ -82,27 +82,46 @@ export default function MessagesPage() {
     setConversations(updatedData);
     setSelectedConversationId(newConversation.id);
   }
-  async function handleSend() {
-    if (!newMessage.trim() || !selectedConversationId) return;
+  // Handles sending a message from the UI to the backend API.
+  // Includes client-side validation to improve user experience and reduce invalid requests.
+  // Note: Security is still enforced on the server (never trust client input alone).
+async function handleSend() {
+  const trimmedMessage = newMessage.trim();
 
-    await fetch("/api/messages", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        conversationId: selectedConversationId,
-        senderId: selectedId,
-        content: newMessage,
-      }),
-    });
+  // Prevent sending empty messages
+  // Improves UX and avoids unnecessary API calls
+  if (!trimmedMessage || !selectedConversationId) return;
 
-    setNewMessage("");
-
-    const res = await fetch(`/api/conversations?employeeId=${selectedId}`);
-    const data = await res.json();
-    setConversations(data);
+  // Enforce message length limit on client side
+  // Helps prevent large payloads before reaching the server
+  if (trimmedMessage.length > 500) {
+    alert("Message cannot exceed 500 characters.");
+    return;
   }
+
+  // Send validated message to backend API
+  await fetch("/api/messages", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+
+    // JSON encoding ensures structured and safe data transmission
+    body: JSON.stringify({
+      conversationId: selectedConversationId,
+      senderId: selectedId,
+      content: trimmedMessage,
+    }),
+  });
+
+  // Clear input after sending
+  setNewMessage("");
+
+  // Refresh conversations to display updated messages
+  const res = await fetch(`/api/conversations?employeeId=${selectedId}`);
+  const data = await res.json();
+  setConversations(data);
+}
 
   const selectedConversation = conversations.find(
     (c) => c.id === selectedConversationId,
