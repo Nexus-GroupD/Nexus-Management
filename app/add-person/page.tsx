@@ -177,7 +177,7 @@ export default function AddPersonPage() {
 
         <div>
           <p>Days Available:</p>
-          {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"].map(
+          {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday","Saturday"].map(
             (day) => (
               <label key={day} style={{ display: "block" }}>
                 <input
