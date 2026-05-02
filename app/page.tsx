@@ -24,7 +24,10 @@ export default function Home() {
   // Lock background scroll when modal is open
   useEffect(() => {
     document.body.style.overflow = isLoggedIn ? "auto" : "hidden";
-    return () => (document.body.style.overflow = "auto");
+
+    return () => {
+      document.body.style.overflow = "auto";
+    };
   }, [isLoggedIn]);
 
   const handleLogin = () => {
@@ -70,12 +73,12 @@ export default function Home() {
               display: "flex",
               flexDirection: "column",
               gap: "1rem",
-              animation: "fadeIn 0.25s ease",
             }}
           >
             <h2 style={{ textAlign: "center", margin: 0 }}>
               Nexus Management
             </h2>
+
             <p style={{ textAlign: "center", fontSize: "0.9rem", color: "#666" }}>
               Sign in to continue
             </p>
@@ -145,7 +148,7 @@ export default function Home() {
 
 const inputStyle = {
   padding: "0.75rem",
-  border: "2px solid #e2e8f0",
+  border: "2px solid "#e2e8f0",
   borderRadius: "8px",
   fontSize: "1rem",
   outline: "none",
