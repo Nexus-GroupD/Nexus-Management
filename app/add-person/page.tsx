@@ -36,15 +36,23 @@ export default function AddPersonPage() {
     );
   };
 
-  const fetchPeople = async () => {
-    try {
-      const res = await fetch("/api/people");
-      const data = await res.json();
-      setPeople(data);
-    } catch (err) {
-      console.error(err);
+ const fetchPeople = async () => {
+  try {
+    const res = await fetch("/api/people");
+    const data = await res.json();
+
+    if (!res.ok || !Array.isArray(data)) {
+      console.error("API error:", data);
+      setPeople([]); // prevent crash
+      return;
     }
-  };
+
+    setPeople(data);
+  } catch (err) {
+    console.error(err);
+    setPeople([]); // safety fallback
+  }
+};
 
   useEffect(() => {
     fetchPeople();
