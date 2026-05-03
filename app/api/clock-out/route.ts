@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import getDb from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { durationMinutes, todayString } from '@/lib/time';
 import type { ApiResponse } from '@/type';
 
@@ -22,13 +22,6 @@ export async function POST(req: NextRequest) {
     }
 
     const db = getDb();
-    if (!db) {
-      return NextResponse.json<ApiResponse<null>>(
-        { success: false, error: 'Database unavailable.' },
-        { status: 503 }
-      );
-    }
-
     // Find the open clock-in entry
     const entry = db.prepare(
       `SELECT id, clock_in FROM clock_entries WHERE person_ID = ? AND date = ? AND clock_out IS NULL`
