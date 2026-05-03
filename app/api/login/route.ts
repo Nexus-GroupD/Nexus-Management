@@ -1,15 +1,18 @@
-import { NextResponse } from "next/server";
-import Database from "better-sqlite3";
+export const runtime = "nodejs";
 
-const db = new Database(process.cwd() + "/nexus.db");
+import { NextResponse } from "next/server";
+import db from "@/lib/db";
 
 const SYSTEM_USERS: Record<string, { password: string; role: "admin" | "viewer" }> = {
   admin: { password: "1234", role: "admin" },
   user:  { password: "1234", role: "viewer" },
 };
 
-function mapDbRole(role: string): "admin" | "viewer" {
-  return role === "Manager" ? "admin" : "viewer";
+function cookieRoleForDbRole(dbRole: string): "admin" | "viewer" {
+  const row = db
+    .prepare("SELECT permission_level FROM custom_roles WHERE name = ?")
+    .get(dbRole) as { permission_level: string } | undefined;
+  return row?.permission_level === "admin" ? "admin" : "viewer";
 }
 
 export async function POST(req: Request) {
@@ -18,7 +21,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Missing credentials" }, { status: 400 });
   }
 
-  // 1. Check hardcoded system users first
+  // System users (hardcoded)
   const sys = SYSTEM_USERS[username];
   if (sys && sys.password === password) {
     const res = NextResponse.json({ success: true, role: sys.role });
@@ -26,16 +29,16 @@ export async function POST(req: Request) {
     return res;
   }
 
-  // 2. Check people table by email
-  const person = db.prepare(
-    "SELECT id, name, email, role, password FROM people WHERE email = ?"
-  ).get(username) as { id: number; name: string; email: string; role: string; password: string | null } | undefined;
+  // DB users — look up by email
+  const person = db
+    .prepare("SELECT id, role, password FROM people WHERE email = ?")
+    .get(username) as { id: number; role: string; password: string | null } | undefined;
 
-  if (!person || person.password !== password || !person.password) {
+  if (!person || !person.password || person.password !== password) {
     return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
   }
 
-  const authRole = mapDbRole(person.role);
+  const authRole = cookieRoleForDbRole(person.role);
   const res = NextResponse.json({ success: true, role: authRole });
   setAuthCookies(res, authRole, person.id);
   return res;

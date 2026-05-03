@@ -1,31 +1,26 @@
-import { NextResponse } from "next/server";
-import Database from "better-sqlite3";
-import { getRole, getUserId } from "@/lib/auth";
+export const runtime = "nodejs";
 
-const db = new Database(process.cwd() + "/nexus.db");
+import { NextResponse } from "next/server";
+import db from "@/lib/db";
+import { getRole, getUserId, getPermissions } from "@/lib/auth";
 
 export async function GET(req: Request) {
   const role = getRole(req);
   if (!role) return NextResponse.json({ error: "Unauthenticated" }, { status: 401 });
 
+  const permissions = getPermissions(req);
   const uid = getUserId(req);
+
   if (uid && uid > 0) {
-    const person = db.prepare(
-      "SELECT id, name, email, role as dbRole FROM people WHERE id = ?"
-    ).get(uid) as { id: number; name: string; email: string; dbRole: string } | undefined;
+    const person = db
+      .prepare("SELECT id, name, email, role as dbRole FROM people WHERE id = ?")
+      .get(uid) as { id: number; name: string; email: string; dbRole: string } | undefined;
 
     if (person) {
-      return NextResponse.json({
-        id: person.id,
-        name: person.name,
-        email: person.email,
-        dbRole: person.dbRole,
-        role,
-      });
+      return NextResponse.json({ ...person, role, permissions });
     }
   }
 
-  // Hardcoded system user
   const isAdmin = role === "admin";
   return NextResponse.json({
     id: 0,
@@ -33,5 +28,6 @@ export async function GET(req: Request) {
     email: "",
     dbRole: isAdmin ? "Manager" : "Employee",
     role,
+    permissions,
   });
 }

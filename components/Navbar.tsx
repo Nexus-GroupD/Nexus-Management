@@ -12,12 +12,13 @@ interface NavbarProps {
 type Me = { id: number; name: string; email: string; dbRole: string; role: string } | null;
 
 const NAV_LINKS = [
-  { href: '/',           label: 'Home',      icon: '⌂' },
-  { href: '/schedule',   label: 'Schedule',  icon: '📅' },
-  { href: '/dashboard',  label: 'Dashboard', icon: '◈' },
-  { href: '/history',    label: 'History',   icon: '⏱' },
-  { href: '/messages',   label: 'Messages',  icon: '✉' },
-  { href: '/add-person', label: 'People',    icon: '👥' },
+  { href: '/',           label: 'Home',      icon: '⌂',  adminOnly: false },
+  { href: '/schedule',   label: 'Schedule',  icon: '📅', adminOnly: false },
+  { href: '/dashboard',  label: 'Dashboard', icon: '◈',  adminOnly: false },
+  { href: '/history',    label: 'History',   icon: '⏱', adminOnly: false },
+  { href: '/messages',   label: 'Messages',  icon: '✉',  adminOnly: false },
+  { href: '/add-person', label: 'People',    icon: '👥', adminOnly: false },
+  { href: '/roles',      label: 'Roles',     icon: '🏷',  adminOnly: true  },
 ];
 
 const Navbar: React.FC<NavbarProps> = ({ pageTitle = 'Nexus Management' }) => {
@@ -74,7 +75,7 @@ const Navbar: React.FC<NavbarProps> = ({ pageTitle = 'Nexus Management' }) => {
 
         {isOpen && (
           <div className="dropdown-menu" role="menu">
-            {NAV_LINKS.map(({ href, label, icon }) => (
+            {NAV_LINKS.filter(({ adminOnly }) => !adminOnly || me?.role === 'admin').map(({ href, label, icon }) => (
               <Link
                 key={href}
                 href={href}
