@@ -16,11 +16,13 @@ jest.mock("next/link", () => {
   );
 });
 
-// Mock usePathname from next/navigation
+// Mock usePathname and useRouter from next/navigation
 const mockUsePathname = jest.fn();
+const mockPush = jest.fn();
 
 jest.mock("next/navigation", () => ({
   usePathname: () => mockUsePathname(),
+  useRouter: () => ({ push: mockPush, replace: jest.fn() }),
 }));
 
 describe("Navbar", () => {
@@ -55,7 +57,7 @@ describe("Navbar", () => {
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
     expect(screen.getByText("History")).toBeInTheDocument();
     expect(screen.getByText("Messages")).toBeInTheDocument();
-    expect(screen.getByText("Add Person")).toBeInTheDocument();
+    expect(screen.getByText("People")).toBeInTheDocument();
   });
 
  it("renders the active link based on pathname", () => {
