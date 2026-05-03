@@ -5,7 +5,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import getDb from '@/lib/db';
+import { getDb } from '@/lib/db';
 import { todayString } from '@/lib/time';
 import type { ApiResponse } from '@/type';
 
