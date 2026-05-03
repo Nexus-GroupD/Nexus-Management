@@ -26,7 +26,7 @@ const Schedule = () => {
   const [shifts, setShifts] = useState<ShiftDisplay[]>([]);
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-  const [people, setPeople] = useState<{ id: number; name: string }[]>([
+  const [people] = useState<{ id: number; name: string }[]>([
     { id: 1, name: 'Alex Rivera' },
     { id: 2, name: 'Jordan Lee' },
     { id: 3, name: 'Sam Patel' },
