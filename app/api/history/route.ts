@@ -5,9 +5,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import getDb from '@/lib/db';
-import type { ApiResponse, ClockEntry } from '@/type';
 
+import type { ApiResponse, ClockEntry } from '@/type';
+import { getDb } from '@/lib/db';
 export async function GET(req: NextRequest) {
   try {
     const params = req.nextUrl.searchParams;
@@ -16,13 +16,6 @@ export async function GET(req: NextRequest) {
     const offset = Number(params.get('offset') ?? 0);
 
     const db = getDb();
-    if (!db) {
-      return NextResponse.json<ApiResponse<null>>(
-        { success: false, error: 'Database unavailable.' },
-        { status: 503 }
-      );
-    }
-
     let rows: ClockEntry[];
 
     if (person_ID) {
