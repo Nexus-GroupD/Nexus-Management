@@ -21,13 +21,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const db = getDb();
-    if (!db) {
-      return NextResponse.json<ApiResponse<null>>(
-        { success: false, error: 'Database unavailable.' },
-        { status: 503 }
-      );
-    }
+  const db = getDb();
 
     // Check if already clocked in today (no clock_out yet)
     const existing = db.prepare(
