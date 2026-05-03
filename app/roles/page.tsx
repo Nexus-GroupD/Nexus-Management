@@ -1,10 +1,9 @@
-import { PERMISSION_GROUPS, ALL_PERMISSIONS, Permission } from "@/lib/permissions";
 "use client";
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
-import { PERMISSION_GROUPS, ALL_PERMISSIONS } from "@/lib/permissions";
+import { PERMISSION_GROUPS, ALL_PERMISSIONS, Permission } from "@/lib/permissions";
 
 type RoleRow = {
   id: number;
@@ -61,8 +60,8 @@ export default function RolesPage() {
     });
   };
 
-  const toggleGroup = (roleId: number, groupPerms: readonly { key: string }[]) => {
-    const keys = groupPerms.map((p: { key: Permission }) => p.key);
+  const toggleGroup = (roleId: number, groupPerms: readonly { key: Permission; label: string }[]) => {
+    const keys = groupPerms.map((p) => p.key as string);
     setPending((prev) => {
       const cur = prev[roleId] ?? [];
       const allIn = keys.every((k) => cur.includes(k));
@@ -84,16 +83,16 @@ export default function RolesPage() {
   const saveRole = async (role: RoleRow) => {
     setSaving(role.id);
     const perms = pending[role.id] ?? role.permissions;
-    const newLevel = perms.length === ALL_PERMISSIONS.length ? "admin"
-      : role.permission_level; // preserve existing level unless all granted
+    const resolvedLevel: "admin" | "viewer" = perms.length === ALL_PERMISSIONS.length ? "admin"
+      : role.permission_level;
 
     const res = await fetch("/api/roles", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id: role.id, permissions: perms, permission_level: newLevel }),
+      body: JSON.stringify({ id: role.id, permissions: perms, permission_level: resolvedLevel }),
     });
     if (res.ok) {
-      setRoles((prev) => prev.map((r) => r.id === role.id ? { ...r, permissions: perms, permission_level: newLevel } : r));
+      setRoles((prev) => prev.map((r) => r.id === role.id ? { ...r, permissions: perms, permission_level: resolvedLevel } : r));
     } else {
       alert("Failed to save");
     }
@@ -171,7 +170,7 @@ export default function RolesPage() {
               <label style={labelStyle}>Starting Permissions</label>
               <div style={permGridStyle}>
                 {PERMISSION_GROUPS.map((group) => {
-                  const keys = group.perms.map((p) => p.key);
+                  const keys = group.perms.map((p) => p.key as string);
                   const allIn = keys.every((k) => newPerms.includes(k));
                   return (
                     <div key={group.label} style={groupBoxStyle}>
@@ -213,7 +212,7 @@ export default function RolesPage() {
           const isExpanded  = expandedId === role.id;
           const isDirty     = JSON.stringify(cur.slice().sort()) !== JSON.stringify(role.permissions.slice().sort());
           const allChecked  = ALL_PERMISSIONS.every((p) => cur.includes(p));
-          const someChecked =  ALL_PERMISSIONS.some((p: Permission) => cur.includes(p));
+          const someChecked = ALL_PERMISSIONS.some((p) => cur.includes(p));
 
           return (
             <div key={role.id} style={cardStyle}>
@@ -260,7 +259,7 @@ export default function RolesPage() {
 
                   <div style={permGridStyle}>
                     {PERMISSION_GROUPS.map((group) => {
-                      const keys   = group.perms.map((p) => p.key);
+                      const keys   = group.perms.map((p) => p.key as string);
                       const allIn  = keys.every((k) => cur.includes(k));
                       const someIn = keys.some((k) => cur.includes(k));
                       return (

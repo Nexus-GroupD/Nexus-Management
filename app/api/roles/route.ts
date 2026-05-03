@@ -3,10 +3,20 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
 import { hasPermission, requireAuth } from "@/lib/auth";
-import { ALL_PERMISSIONS } from "@/lib/permissions";
+import { ALL_PERMISSIONS, Permission } from "@/lib/permissions";
 
 function forbidden() {
   return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+}
+
+/** Type-safe permission validator — avoids TS2345 on Array<Permission>.includes(string) */
+function isValidPermission(p: string): p is Permission {
+  return (ALL_PERMISSIONS as readonly string[]).includes(p);
+}
+
+function filterValidPerms(permissions: unknown): string[] {
+  if (!Array.isArray(permissions)) return [];
+  return permissions.filter((p): p is string => typeof p === "string" && isValidPermission(p));
 }
 
 export async function GET(req: Request) {
@@ -35,9 +45,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "permission_level must be admin or viewer" }, { status: 400 });
   }
 
-  const perms: string[] = Array.isArray(permissions)
-    ? permissions.filter((p: string) => ALL_PERMISSIONS.includes(p))
-    : [];
+  const perms = filterValidPerms(permissions);
 
   try {
     const result = db
@@ -56,7 +64,6 @@ export async function POST(req: Request) {
   }
 }
 
-// Update a role's permissions (and optionally permission_level)
 export async function PATCH(req: Request) {
   if (!requireAuth(req)) return forbidden();
   if (!hasPermission(req, "roles.edit")) return forbidden();
@@ -69,9 +76,7 @@ export async function PATCH(req: Request) {
     .get(id);
   if (!role) return NextResponse.json({ error: "Role not found" }, { status: 404 });
 
-  const validPerms: string[] = Array.isArray(permissions)
-    ? permissions.filter((p: string) => ALL_PERMISSIONS.includes(p))
-    : [];
+  const validPerms = filterValidPerms(permissions);
 
   if (permission_level !== undefined) {
     if (permission_level !== "admin" && permission_level !== "viewer") {

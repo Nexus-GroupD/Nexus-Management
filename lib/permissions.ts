@@ -1,4 +1,3 @@
-// Define the keys explicitly as a const tuple first
 export const ALL_PERMISSION_KEYS = [
   "people.view", "people.add", "people.edit", "people.delete",
   "pay.view", "pay.edit",
@@ -16,8 +15,15 @@ export const ALL_PERMISSION_KEYS = [
   "all.view_all", "system.settings",
 ] as const;
 
-export type Permission = typeof ALL_PERMISSION_KEYS[number];
-export const PERMISSION_GROUPS = [
+export type Permission = (typeof ALL_PERMISSION_KEYS)[number];
+
+/** Narrowed perm entry — key is always a Permission, not a plain string */
+export type PermEntry = { key: Permission; label: string };
+
+export const PERMISSION_GROUPS: ReadonlyArray<{
+  label: string;
+  perms: ReadonlyArray<PermEntry>;
+}> = [
   {
     label: "People",
     perms: [
@@ -118,14 +124,15 @@ export const PERMISSION_GROUPS = [
       { key: "system.settings", label: "System settings access" },
     ],
   },
-] as const;
+];
 
+/** Flat array of all valid permission strings */
 export const ALL_PERMISSIONS: Permission[] = [...ALL_PERMISSION_KEYS];
 
 // Default permission sets for the three built-in roles
-export const MANAGER_PERMISSIONS: string[] = [...ALL_PERMISSIONS];
+export const MANAGER_PERMISSIONS: Permission[] = [...ALL_PERMISSIONS];
 
-export const TEAM_LEAD_PERMISSIONS: string[] = [
+export const TEAM_LEAD_PERMISSIONS: Permission[] = [
   "people.view", "people.add", "people.edit",
   "pay.view",
   "schedule.view", "schedule.edit", "schedule.assign_shifts",
@@ -137,7 +144,7 @@ export const TEAM_LEAD_PERMISSIONS: string[] = [
   "time_off.approve",
 ];
 
-export const EMPLOYEE_PERMISSIONS: string[] = [
+export const EMPLOYEE_PERMISSIONS: Permission[] = [
   "people.view",
   "schedule.view",
   "availability.view",
