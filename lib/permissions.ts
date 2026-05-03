@@ -105,7 +105,7 @@ export const PERMISSION_GROUPS = [
 
 export const ALL_PERMISSIONS = PERMISSION_GROUPS.flatMap((g) =>
   g.perms.map((p) => p.key)
-) as string[];
+) as Permission[];
 
 // Default permission sets for the three built-in roles
 export const MANAGER_PERMISSIONS: string[] = [...ALL_PERMISSIONS];
