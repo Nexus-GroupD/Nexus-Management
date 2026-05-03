@@ -2,49 +2,66 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import './Navbar.css';
 
 interface NavbarProps {
   pageTitle?: string;
 }
 
+type Me = { id: number; name: string; email: string; dbRole: string; role: string } | null;
+
 const NAV_LINKS = [
-  { href: '/',          label: 'Home',      icon: '⌂' },
-  { href: '/schedule',  label: 'Schedule',  icon: '📅' },
-  { href: '/dashboard', label: 'Dashboard', icon: '◈' },
-  { href: '/history',   label: 'History',   icon: '⏱' },
-  { href: '/messages',  label: 'Messages',  icon: '✉' },
-   { href: '/add-person', label: 'Add Person', icon: '➕'  },
+  { href: '/',           label: 'Home',      icon: '⌂' },
+  { href: '/schedule',   label: 'Schedule',  icon: '📅' },
+  { href: '/dashboard',  label: 'Dashboard', icon: '◈' },
+  { href: '/history',    label: 'History',   icon: '⏱' },
+  { href: '/messages',   label: 'Messages',  icon: '✉' },
+  { href: '/add-person', label: 'People',    icon: '👥' },
 ];
 
 const Navbar: React.FC<NavbarProps> = ({ pageTitle = 'Nexus Management' }) => {
-  const [isOpen, setIsOpen] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
-  const pathname = usePathname();
+  const [isOpen, setIsOpen]           = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
+  const [me, setMe]                   = useState<Me>(null);
+  const menuRef    = useRef<HTMLDivElement>(null);
+  const profileRef = useRef<HTMLDivElement>(null);
+  const pathname   = usePathname();
+  const router     = useRouter();
 
-  // Close menu on outside click
+  useEffect(() => {
+    fetch('/api/me')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => setMe(d))
+      .catch(() => setMe(null));
+  }, [pathname]);
+
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setIsOpen(false);
-      }
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) setIsOpen(false);
+      if (profileRef.current && !profileRef.current.contains(e.target as Node)) setProfileOpen(false);
     };
-    if (isOpen) document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, [isOpen]);
+  }, []);
 
-  // Close menu on route change
-  useEffect(() => {
-    setIsOpen(false);
-  }, [pathname]);
+  useEffect(() => { setIsOpen(false); setProfileOpen(false); }, [pathname]);
+
+  const handleLogout = async () => {
+    await fetch('/api/logout', { method: 'POST' });
+    setMe(null);
+    setProfileOpen(false);
+    router.push('/login');
+  };
+
+  const initial = me?.name?.charAt(0).toUpperCase() ?? '?';
 
   return (
     <nav className="navbar" role="navigation" aria-label="Main navigation">
       <div className="navbar-content" ref={menuRef}>
         <button
           className={`hamburger ${isOpen ? 'open' : ''}`}
-          onClick={() => setIsOpen(prev => !prev)}
+          onClick={() => setIsOpen((p) => !p)}
           aria-expanded={isOpen}
           aria-label="Toggle navigation menu"
         >
@@ -53,9 +70,7 @@ const Navbar: React.FC<NavbarProps> = ({ pageTitle = 'Nexus Management' }) => {
           <span className="hamburger-line" />
         </button>
 
-        <h1 className="navbar-title">
-          {pageTitle}
-        </h1>
+        <h1 className="navbar-title">{pageTitle}</h1>
 
         {isOpen && (
           <div className="dropdown-menu" role="menu">
@@ -73,6 +88,48 @@ const Navbar: React.FC<NavbarProps> = ({ pageTitle = 'Nexus Management' }) => {
           </div>
         )}
       </div>
+
+      {/* Profile */}
+      {me && (
+        <div className="navbar-profile" ref={profileRef}>
+          <button
+            className="profile-avatar"
+            onClick={() => setProfileOpen((p) => !p)}
+            aria-label="Profile menu"
+          >
+            {initial}
+          </button>
+
+          {profileOpen && (
+            <div className="profile-dropdown">
+              <div className="profile-header">
+                <div className="profile-avatar-lg">{initial}</div>
+                <div style={{ minWidth: 0 }}>
+                  <div className="profile-name">{me.name}</div>
+                  {me.email && <div className="profile-email">{me.email}</div>}
+                  <span className="profile-role-tag">{me.dbRole}</span>
+                </div>
+              </div>
+              <div className="profile-divider" />
+              <Link href="/settings" className="profile-menu-item">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="3"/>
+                  <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06-.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                </svg>
+                Settings
+              </Link>
+              <button onClick={handleLogout} className="profile-menu-item profile-logout">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                  <polyline points="16 17 21 12 16 7"/>
+                  <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                Log Out
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </nav>
   );
 };

@@ -1,163 +1,300 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import { getGreeting } from "@/lib/time";
 
-const VALID_USERNAME = "admin";
-const VALID_PASSWORD = "1234";
+type Me = { id: number; name: string; dbRole: string; role: string };
+type Shift = { shiftId: number; date: string; startTime: string; endTime: string; personId: number | null };
+
+const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+function formatTime(t: string) {
+  // Already formatted like "9:00 AM" or "17:00" — return as-is
+  return t;
+}
 
 export default function Home() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
+  const router = useRouter();
+  const [me, setMe]         = useState<Me | null>(null);
+  const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // check session
-  useEffect(() => {
-    const saved = sessionStorage.getItem("nexus_logged_in");
-    if (saved === "true") setIsLoggedIn(true);
-    setLoading(false);
-  }, []);
+  const today = new Date();
+  const [viewYear,  setViewYear]  = useState(today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const [selected,  setSelected]  = useState<string | null>(null); // "YYYY-MM-DD"
 
-  // lock scroll when modal open
   useEffect(() => {
-    document.body.style.overflow = isLoggedIn ? "auto" : "hidden";
-    return () => {
-      document.body.style.overflow = "auto";
+    const init = async () => {
+      const meRes = await fetch("/api/me");
+      if (!meRes.ok) { router.replace("/login"); return; }
+      const meData: Me = await meRes.json();
+      setMe(meData);
+
+      if (meData.id > 0) {
+        const shiftRes = await fetch("/api/shifts");
+        const shiftJson = await shiftRes.json();
+        if (shiftJson.success && Array.isArray(shiftJson.data)) {
+          const mine = shiftJson.data.filter((s: Shift) => s.personId === meData.id);
+          setShifts(mine);
+        }
+      }
+      setLoading(false);
     };
-  }, [isLoggedIn]);
+    init();
+  }, [router]);
 
-  const handleLogin = () => {
-    if (username === VALID_USERNAME && password === VALID_PASSWORD) {
-      sessionStorage.setItem("nexus_logged_in", "true");
-      setIsLoggedIn(true);
-      setError("");
-    } else {
-      setError("Invalid username or password");
-      setPassword("");
-    }
+  if (loading) return <div style={{ height: "100vh", background: "#f8fafc" }} />;
+  if (!me) return null;
+
+  // Calendar math
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,"0")}-${String(today.getDate()).padStart(2,"0")}`;
+
+  const shiftsByDate: Record<string, Shift[]> = {};
+  shifts.forEach((s) => {
+    const key = s.date.slice(0, 10);
+    if (!shiftsByDate[key]) shiftsByDate[key] = [];
+    shiftsByDate[key].push(s);
+  });
+
+  const prevMonth = () => {
+    if (viewMonth === 0) { setViewYear(y => y - 1); setViewMonth(11); }
+    else setViewMonth(m => m - 1);
+    setSelected(null);
+  };
+  const nextMonth = () => {
+    if (viewMonth === 11) { setViewYear(y => y + 1); setViewMonth(0); }
+    else setViewMonth(m => m + 1);
+    setSelected(null);
   };
 
-  if (loading) {
-    return <div style={{ height: "100vh", background: "#0f172a" }} />;
-  }
+  const cells: (number | null)[] = [
+    ...Array(firstDay).fill(null),
+    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
+  ];
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  const selectedShifts = selected ? (shiftsByDate[selected] ?? []) : [];
+
+  // Upcoming shifts (next 7 days from today)
+  const upcoming = shifts
+    .filter((s) => s.date >= todayStr)
+    .sort((a, b) => a.date.localeCompare(b.date))
+    .slice(0, 5);
 
   return (
     <>
       <Navbar pageTitle="Home" />
+      <div style={pageStyle}>
 
-      {/* LOGIN OVERLAY */}
-      {!isLoggedIn && (
-        <div style={overlayStyle}>
-          <div style={modalStyle}>
-            <h2 style={{ margin: 0, textAlign: "center" }}>
-              Nexus Management
-            </h2>
-            <p style={{ marginTop: 4, textAlign: "center", color: "#666" }}>
-              Please sign in to continue
-            </p>
+        {/* Greeting */}
+        <div style={heroStyle}>
+          <p style={greetingStyle}>{getGreeting()},</p>
+          <h1 style={nameStyle}>{me.name}</h1>
+          <span style={roleTagStyle}>{me.dbRole}</span>
+        </div>
 
-            <input
-              style={inputStyle}
-              placeholder="Username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-            />
+        <div style={layoutStyle}>
+          {/* Calendar */}
+          <div style={calendarCardStyle}>
+            {/* Month nav */}
+            <div style={calNavStyle}>
+              <button onClick={prevMonth} style={navBtnStyle}>‹</button>
+              <span style={monthLabelStyle}>{MONTHS[viewMonth]} {viewYear}</span>
+              <button onClick={nextMonth} style={navBtnStyle}>›</button>
+            </div>
 
-            <input
-              style={inputStyle}
-              type="password"
-              placeholder="Password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleLogin()}
-            />
+            {/* Day headers */}
+            <div style={gridStyle}>
+              {DAYS_OF_WEEK.map((d) => (
+                <div key={d} style={dayHeaderStyle}>{d}</div>
+              ))}
 
-            {error && (
-              <div style={{ color: "red", fontSize: "0.85rem", textAlign: "center" }}>
-                {error}
+              {/* Day cells */}
+              {cells.map((day, i) => {
+                if (!day) return <div key={`empty-${i}`} />;
+                const dateStr = `${viewYear}-${String(viewMonth+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+                const hasShift = !!shiftsByDate[dateStr];
+                const isToday = dateStr === todayStr;
+                const isSelected = dateStr === selected;
+
+                return (
+                  <button
+                    key={dateStr}
+                    onClick={() => setSelected(isSelected ? null : dateStr)}
+                    style={{
+                      ...dayCellStyle,
+                      ...(isToday ? todayCellStyle : {}),
+                      ...(isSelected ? selectedCellStyle : {}),
+                      position: "relative",
+                    }}
+                  >
+                    {day}
+                    {hasShift && (
+                      <span style={{
+                        ...shiftDotStyle,
+                        background: isSelected ? "white" : "#0f172a",
+                      }} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Selected day detail */}
+            {selected && (
+              <div style={detailPanelStyle}>
+                <p style={detailDateStyle}>
+                  {new Date(selected + "T00:00:00").toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+                </p>
+                {selectedShifts.length === 0 ? (
+                  <p style={{ color: "#94a3b8", fontSize: "0.875rem", margin: 0 }}>No shifts scheduled</p>
+                ) : (
+                  selectedShifts.map((s) => (
+                    <div key={s.shiftId} style={shiftPillStyle}>
+                      <span style={shiftDotInlineStyle} />
+                      {formatTime(s.startTime)} – {formatTime(s.endTime)}
+                    </div>
+                  ))
+                )}
               </div>
             )}
+          </div>
 
-            <button onClick={handleLogin} style={buttonStyle}>
-              Sign In
-            </button>
+          {/* Upcoming shifts sidebar */}
+          <div style={sidebarStyle}>
+            <h3 style={sidebarTitleStyle}>Upcoming Shifts</h3>
+            {me.id === 0 ? (
+              <p style={emptyStyle}>System accounts don't have assigned shifts.</p>
+            ) : upcoming.length === 0 ? (
+              <p style={emptyStyle}>No upcoming shifts scheduled.</p>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
+                {upcoming.map((s) => {
+                  const d = new Date(s.date + "T00:00:00");
+                  const isToday = s.date.slice(0,10) === todayStr;
+                  return (
+                    <div key={s.shiftId} style={upcomingRowStyle}>
+                      <div style={upcomingDateBoxStyle}>
+                        <span style={upcomingMonStyle}>{d.toLocaleDateString("en-US",{month:"short"})}</span>
+                        <span style={upcomingDayNumStyle}>{d.getDate()}</span>
+                      </div>
+                      <div>
+                        <div style={{ fontSize: "0.875rem", fontWeight: 600, color: "#0f172a" }}>
+                          {isToday ? "Today" : d.toLocaleDateString("en-US",{weekday:"short"})}
+                        </div>
+                        <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "0.1rem" }}>
+                          {formatTime(s.startTime)} – {formatTime(s.endTime)}
+                        </div>
+                      </div>
+                      {isToday && <span style={todayBadgeStyle}>Today</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
-      )}
-
-      {/* PAGE CONTENT */}
-      <div style={{ padding: "6rem 2rem 2rem 2rem", textAlign: "center" }}>
-        <h1>Nexus Management</h1>
-        <p>Welcome to the Nexus scheduling system</p>
-
-        <p>{getGreeting()}! Welcome to the Nexus scheduling system</p>
-
-        {isLoggedIn && (
-          <button
-            onClick={() => {
-              sessionStorage.removeItem("nexus_logged_in");
-              setIsLoggedIn(false);
-              setUsername("");
-              setPassword("");
-            }}
-            style={{
-              marginTop: "1rem",
-              padding: "0.5rem 1rem",
-              background: "#e53e3e",
-              color: "white",
-              border: "none",
-              borderRadius: "8px",
-              cursor: "pointer",
-            }}
-          >
-            Log Out
-          </button>
-        )}
       </div>
     </>
   );
 }
 
-/* Styles */
-const overlayStyle: React.CSSProperties = {
-  position: "fixed",
-  inset: 0,
-  backgroundColor: "rgba(0,0,0,0.7)",
-  backdropFilter: "blur(6px)",
-  display: "flex",
-  alignItems: "center",
-  justifyContent: "center",
-  zIndex: 9999,
+/* ── Styles ── */
+const pageStyle: React.CSSProperties = {
+  maxWidth: "900px", margin: "0 auto", padding: "6rem 1.5rem 3rem",
+};
+const heroStyle: React.CSSProperties = { marginBottom: "2rem" };
+const greetingStyle: React.CSSProperties = { margin: "0 0 0.2rem", color: "#64748b", fontSize: "1rem", fontWeight: 500 };
+const nameStyle: React.CSSProperties = { margin: "0 0 0.5rem", fontSize: "2rem", fontWeight: 700, color: "#0f172a" };
+const roleTagStyle: React.CSSProperties = {
+  display: "inline-block", background: "#f1f5f9", color: "#475569",
+  borderRadius: "999px", padding: "0.25rem 0.875rem", fontSize: "0.8rem", fontWeight: 600,
+};
+const layoutStyle: React.CSSProperties = {
+  display: "grid", gridTemplateColumns: "1fr 280px", gap: "1.25rem", alignItems: "start",
+};
+const calendarCardStyle: React.CSSProperties = {
+  background: "white", borderRadius: "16px", padding: "1.5rem",
+  boxShadow: "0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06)",
+  border: "1px solid #f1f5f9",
+};
+const calNavStyle: React.CSSProperties = {
+  display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem",
+};
+const navBtnStyle: React.CSSProperties = {
+  background: "#f1f5f9", border: "none", borderRadius: "8px",
+  width: "32px", height: "32px", cursor: "pointer",
+  fontSize: "1.1rem", color: "#475569", display: "flex", alignItems: "center", justifyContent: "center",
+};
+const monthLabelStyle: React.CSSProperties = { fontWeight: 700, fontSize: "1rem", color: "#0f172a" };
+const gridStyle: React.CSSProperties = { display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: "4px" };
+const dayHeaderStyle: React.CSSProperties = {
+  textAlign: "center", fontSize: "0.75rem", fontWeight: 600,
+  color: "#94a3b8", padding: "0.25rem 0", textTransform: "uppercase",
+};
+const dayCellStyle: React.CSSProperties = {
+  aspectRatio: "1", display: "flex", flexDirection: "column",
+  alignItems: "center", justifyContent: "center",
+  borderRadius: "8px", border: "none", background: "transparent",
+  cursor: "pointer", fontSize: "0.875rem", color: "#374151",
+  fontWeight: 500, gap: "3px", transition: "background 0.1s",
+};
+const todayCellStyle: React.CSSProperties = {
+  background: "#f1f5f9", color: "#0f172a", fontWeight: 700,
+};
+const selectedCellStyle: React.CSSProperties = {
+  background: "#0f172a", color: "white",
+};
+const shiftDotStyle: React.CSSProperties = {
+  width: "5px", height: "5px", borderRadius: "50%", display: "block",
+};
+const detailPanelStyle: React.CSSProperties = {
+  marginTop: "1.25rem", paddingTop: "1.25rem",
+  borderTop: "1px solid #f1f5f9",
+  display: "flex", flexDirection: "column", gap: "0.5rem",
+};
+const detailDateStyle: React.CSSProperties = {
+  margin: "0 0 0.4rem", fontWeight: 700, color: "#0f172a", fontSize: "0.9rem",
+};
+const shiftPillStyle: React.CSSProperties = {
+  display: "flex", alignItems: "center", gap: "0.5rem",
+  background: "#f8fafc", borderRadius: "8px", padding: "0.5rem 0.75rem",
+  fontSize: "0.875rem", color: "#374151", fontWeight: 500,
+};
+const shiftDotInlineStyle: React.CSSProperties = {
+  width: "7px", height: "7px", borderRadius: "50%",
+  background: "#0f172a", flexShrink: 0,
 };
 
-const modalStyle: React.CSSProperties = {
-  width: "360px",
-  background: "white",
-  padding: "2rem",
-  borderRadius: "16px",
-  display: "flex",
-  flexDirection: "column",
-  gap: "1rem",
-  boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
+// Sidebar
+const sidebarStyle: React.CSSProperties = {
+  background: "white", borderRadius: "16px", padding: "1.5rem",
+  boxShadow: "0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06)",
+  border: "1px solid #f1f5f9",
 };
-
-const inputStyle: React.CSSProperties = {
-  padding: "0.75rem",
-  border: "1px solid #ddd",
-  borderRadius: "8px",
-  outline: "none",
-  fontSize: "1rem",
+const sidebarTitleStyle: React.CSSProperties = {
+  margin: "0 0 1rem", fontSize: "0.95rem", fontWeight: 700, color: "#0f172a",
 };
-
-const buttonStyle: React.CSSProperties = {
-  padding: "0.75rem",
-  background: "#1a202c",
-  color: "white",
-  border: "none",
-  borderRadius: "8px",
-  cursor: "pointer",
+const emptyStyle: React.CSSProperties = { color: "#94a3b8", fontSize: "0.875rem", margin: 0 };
+const upcomingRowStyle: React.CSSProperties = {
+  display: "flex", alignItems: "center", gap: "0.875rem",
+  padding: "0.75rem", borderRadius: "10px", background: "#f8fafc",
+};
+const upcomingDateBoxStyle: React.CSSProperties = {
+  display: "flex", flexDirection: "column", alignItems: "center",
+  background: "#0f172a", color: "white", borderRadius: "8px",
+  padding: "0.3rem 0.5rem", minWidth: "38px",
+};
+const upcomingMonStyle: React.CSSProperties = { fontSize: "0.6rem", fontWeight: 600, textTransform: "uppercase", opacity: 0.7 };
+const upcomingDayNumStyle: React.CSSProperties = { fontSize: "1rem", fontWeight: 700, lineHeight: 1 };
+const todayBadgeStyle: React.CSSProperties = {
+  marginLeft: "auto", background: "#dcfce7", color: "#16a34a",
+  borderRadius: "999px", padding: "0.15rem 0.5rem",
+  fontSize: "0.7rem", fontWeight: 600,
 };

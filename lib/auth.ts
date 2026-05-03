@@ -1,7 +1,20 @@
-export function requireAuth(req: Request) {
-  const cookie = req.headers.get("cookie");
+export function getRole(req: Request): "admin" | "viewer" | null {
+  const cookie = req.headers.get("cookie") ?? "";
+  if (cookie.includes("nexus-auth=admin")) return "admin";
+  if (cookie.includes("nexus-auth=viewer")) return "viewer";
+  return null;
+}
 
-  if (!cookie) return false;
+export function getUserId(req: Request): number | null {
+  const cookie = req.headers.get("cookie") ?? "";
+  const match = cookie.match(/nexus-uid=(\d+)/);
+  return match ? parseInt(match[1], 10) : null;
+}
 
-  return cookie.includes("nexus-auth=admin");
+export function requireAuth(req: Request): boolean {
+  return getRole(req) !== null;
+}
+
+export function requireAdmin(req: Request): boolean {
+  return getRole(req) === "admin";
 }

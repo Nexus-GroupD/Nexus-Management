@@ -3,79 +3,91 @@
 import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 
-const ADMIN_PIN = "1234"; // change this to whatever PIN you want
+const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+type Role = "admin" | "viewer" | null;
 
 export default function AddPersonPage() {
-  const [pinInput, setPinInput] = useState("");
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [pinError, setPinError] = useState("");
+  const [role, setRole] = useState<Role>(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
+  // Login overlay state
+  const [loginUsername, setLoginUsername] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginError, setLoginError] = useState("");
+  const [loginLoading, setLoginLoading] = useState(false);
+
+  // Form state
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [role, setRole] = useState("Employee");
+  const [personRole, setPersonRole] = useState("Employee");
   const [pay, setPay] = useState("");
+  const [password, setPassword] = useState("");
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [days, setDays] = useState<string[]>([]);
-  const [people, setPeople] = useState<any[]>([]);
   const [editingId, setEditingId] = useState<number | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  const handlePinSubmit = () => {
-    if (pinInput === ADMIN_PIN) {
-      setIsAdmin(true);
-      setPinError("");
-    } else {
-      setPinError("Incorrect PIN. Try again.");
-      setPinInput("");
-    }
-  };
-
-  const handleDayChange = (day: string) => {
-    setDays((prev) =>
-      prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]
-    );
-  };
-
- const fetchPeople = async () => {
-  try {
-    const res = await fetch("/api/people");
-    const data = await res.json();
-
-    if (!res.ok || !Array.isArray(data)) {
-      console.error("API error:", data);
-      setPeople([]); // prevent crash
-      return;
-    }
-
-    setPeople(data);
-  } catch (err) {
-    console.error(err);
-    setPeople([]); // safety fallback
-  }
-};
+  // People list
+  const [people, setPeople] = useState<any[]>([]);
 
   useEffect(() => {
-    fetchPeople();
+    fetch("/api/me")
+      .then((r) => r.json())
+      .then((d) => setRole(d.role ?? null))
+      .catch(() => setRole(null))
+      .finally(() => setAuthLoading(false));
   }, []);
 
-  const handleDelete = async (id: number) => {
+  useEffect(() => {
+    if (role) fetchPeople();
+  }, [role]);
+
+  const fetchPeople = async () => {
     try {
-      await fetch("/api/people", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id }),
-      });
-      fetchPeople();
-    } catch (err) {
-      console.error(err);
+      const res = await fetch("/api/people");
+      const data = await res.json();
+      setPeople(Array.isArray(data) ? data : []);
+    } catch {
+      setPeople([]);
     }
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoginLoading(true);
+    setLoginError("");
+    try {
+      const res = await fetch("/api/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ username: loginUsername, password: loginPassword }),
+        credentials: "include",
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setRole(data.role);
+      } else {
+        setLoginError("Invalid username or password");
+        setLoginPassword("");
+      }
+    } catch {
+      setLoginError("Something went wrong. Try again.");
+    } finally {
+      setLoginLoading(false);
+    }
+  };
+
+  const handleDayToggle = (day: string) => {
+    setDays((prev) => prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]);
   };
 
   const handleEdit = (person: any) => {
     setEditingId(person.id);
     setName(person.name);
     setEmail(person.email);
-    setRole(person.role);
+    setPersonRole(person.role);
     setPay(person.pay_per_hour.toString());
     const daysList = Object.keys(person.availability || {});
     setDays(daysList);
@@ -84,10 +96,28 @@ export default function AddPersonPage() {
       setStartTime(start);
       setEndTime(end);
     }
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setName(""); setEmail(""); setPersonRole("Employee");
+    setPay(""); setPassword(""); setStartTime(""); setEndTime(""); setDays([]);
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Remove this person?")) return;
+    await fetch("/api/people", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    fetchPeople();
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSubmitting(true);
     const availability = days.reduce((acc: any, day) => {
       acc[day] = [`${startTime}-${endTime}`];
       return acc;
@@ -99,185 +129,385 @@ export default function AddPersonPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(
           isEditing
-            ? { id: editingId, name, email, role, pay_per_hour: Number(pay), availability }
-            : { name, email, role, pay_per_hour: Number(pay), availability }
+            ? { id: editingId, name, email, role: personRole, pay_per_hour: Number(pay), availability, ...(password ? { password } : {}) }
+            : { name, email, role: personRole, pay_per_hour: Number(pay), availability, password: password || null }
         ),
       });
       if (res.ok) {
-        alert(isEditing ? "Person updated!" : "Person added!");
-        setEditingId(null);
-        setName("");
-        setEmail("");
-        setRole("Employee");
-        setPay("");
-        setStartTime("");
-        setEndTime("");
-        setDays([]);
+        handleCancelEdit();
         fetchPeople();
       } else {
         alert("Error saving person");
       }
-    } catch (error) {
-      console.error(error);
+    } catch {
       alert("Something went wrong");
+    } finally {
+      setSubmitting(false);
     }
   };
 
+  if (authLoading) {
+    return (
+      <>
+        <Navbar pageTitle="People" />
+        <div style={loadingStyle}>
+          <div style={spinnerStyle} />
+        </div>
+      </>
+    );
+  }
+
   return (
     <>
-      <Navbar pageTitle={editingId ? "Edit Person" : "Add Person"} />
+      <Navbar pageTitle={editingId ? "Edit Person" : "People"} />
 
-      {/* PIN OVERLAY */}
-      {!isAdmin && (
-        <div style={{
-          position: "fixed",
-          inset: 0,
-          backgroundColor: "rgba(0, 0, 0, 0.6)",
-          zIndex: 9999,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-        }}>
-          <div style={{
-            background: "white",
-            borderRadius: "12px",
-            padding: "2rem",
-            width: "300px",
-            textAlign: "center",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
-          }}>
-            <h2 style={{ marginBottom: "0.5rem" }}>Admin Access</h2>
-            <p style={{ color: "#666", marginBottom: "1.5rem", fontSize: "0.9rem" }}>
-              Enter your PIN to continue
-            </p>
+      {/* LOGIN OVERLAY */}
+      {!role && (
+        <div style={overlayStyle}>
+          <div style={loginCardStyle}>
+            <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
+              <div style={iconStyle}>
+                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </div>
+              <h2 style={{ margin: "0.75rem 0 0.25rem", fontSize: "1.4rem", fontWeight: 700, color: "#0f172a" }}>Sign In</h2>
+              <p style={{ margin: 0, color: "#64748b", fontSize: "0.9rem" }}>Access the People directory</p>
+            </div>
 
-            <input
-              type="password"
-              placeholder="Enter PIN"
-              value={pinInput}
-              onChange={(e) => setPinInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handlePinSubmit()}
-              style={{
-                width: "100%",
-                padding: "0.75rem",
-                fontSize: "1.2rem",
-                letterSpacing: "0.5rem",
-                textAlign: "center",
-                border: "2px solid #e2e8f0",
-                borderRadius: "8px",
-                marginBottom: "1rem",
-                outline: "none",
-                boxSizing: "border-box",
-              }}
-              autoFocus
-            />
-
-            {pinError && (
-              <p style={{ color: "red", fontSize: "0.85rem", marginBottom: "1rem" }}>
-                {pinError}
-              </p>
-            )}
-
-            <button
-              onClick={handlePinSubmit}
-              style={{
-                width: "100%",
-                padding: "0.75rem",
-                background: "#1a202c",
-                color: "white",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "1rem",
-                cursor: "pointer",
-              }}
-            >
-              Unlock
-            </button>
+            <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
+              <div style={fieldGroupStyle}>
+                <label style={labelStyle}>Username</label>
+                <input
+                  style={inputStyle}
+                  placeholder="Enter username"
+                  value={loginUsername}
+                  onChange={(e) => setLoginUsername(e.target.value)}
+                  autoFocus
+                  required
+                />
+              </div>
+              <div style={fieldGroupStyle}>
+                <label style={labelStyle}>Password</label>
+                <input
+                  style={inputStyle}
+                  type="password"
+                  placeholder="Enter password"
+                  value={loginPassword}
+                  onChange={(e) => setLoginPassword(e.target.value)}
+                  required
+                />
+              </div>
+              {loginError && <p style={{ color: "#ef4444", fontSize: "0.85rem", margin: 0, textAlign: "center" }}>{loginError}</p>}
+              <button type="submit" style={primaryBtnStyle} disabled={loginLoading}>
+                {loginLoading ? "Signing in…" : "Sign In"}
+              </button>
+            </form>
           </div>
         </div>
       )}
 
-      {/* PAGE CONTENT */}
-      <div style={{ paddingTop: "5rem", padding: "5rem 2rem 2rem" }}>
-        <form
-          onSubmit={handleSubmit}
-          style={{ display: "flex", flexDirection: "column", gap: "1rem", maxWidth: "400px" }}
-        >
-          <input
-            type="text"
-            placeholder="Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-          />
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-          <select value={role} onChange={(e) => setRole(e.target.value)}>
-            <option value="Employee">Employee</option>
-            <option value="Team Lead">Team Lead</option>
-            <option value="Manager">Manager</option>
-          </select>
-          <input
-            type="number"
-            placeholder="Pay per hour"
-            value={pay}
-            onChange={(e) => setPay(e.target.value)}
-            required
-          />
-          <div>
-            <p>Days Available:</p>
-            {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"].map((day) => (
-              <label key={day} style={{ display: "block" }}>
-                <input
-                  type="checkbox"
-                  checked={days.includes(day)}
-                  onChange={() => handleDayChange(day)}
-                />
-                {day}
-              </label>
-            ))}
-          </div>
-          <div>
-            <p>Time Available:</p>
-            <input
-              type="time"
-              value={startTime}
-              onChange={(e) => setStartTime(e.target.value)}
-              required
-            />
-            {" - "}
-            <input
-              type="time"
-              value={endTime}
-              onChange={(e) => setEndTime(e.target.value)}
-              required
-            />
-          </div>
-          <button type="submit">{editingId ? "Update Person" : "Add Person"}</button>
-        </form>
+      {/* MAIN CONTENT */}
+      <div style={pageStyle}>
 
-        <hr style={{ margin: "2rem 0" }} />
+        {/* ADD / EDIT FORM — admin only */}
+        {role === "admin" && (
+          <div style={cardStyle}>
+            <h2 style={sectionTitleStyle}>{editingId ? "Edit Person" : "Add New Person"}</h2>
 
-        <h2>People</h2>
-        {people.map((person) => (
-          <div
-            key={person.id}
-            style={{ border: "1px solid #ccc", padding: "1rem", marginBottom: "1rem" }}
-          >
-            <p><strong>{person.name}</strong></p>
-            <p>{person.email}</p>
-            <p>{person.role}</p>
-            <p>${person.pay_per_hour}/hr</p>
-            <button onClick={() => handleEdit(person)}>Edit</button>
-            <button onClick={() => handleDelete(person.id)}>Delete</button>
+            <form onSubmit={handleSubmit} style={formStyle}>
+              <div style={twoColStyle}>
+                <div style={fieldGroupStyle}>
+                  <label style={labelStyle}>Full Name</label>
+                  <input style={inputStyle} placeholder="Jane Smith" value={name} onChange={(e) => setName(e.target.value)} required />
+                </div>
+                <div style={fieldGroupStyle}>
+                  <label style={labelStyle}>Email</label>
+                  <input style={inputStyle} type="email" placeholder="jane@example.com" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                </div>
+              </div>
+
+              <div style={twoColStyle}>
+                <div style={fieldGroupStyle}>
+                  <label style={labelStyle}>Role</label>
+                  <select style={inputStyle} value={personRole} onChange={(e) => setPersonRole(e.target.value)}>
+                    <option value="Employee">Employee</option>
+                    <option value="Team Lead">Team Lead</option>
+                    <option value="Manager">Manager</option>
+                  </select>
+                </div>
+                <div style={fieldGroupStyle}>
+                  <label style={labelStyle}>Pay per Hour ($)</label>
+                  <input style={inputStyle} type="number" placeholder="18.00" min="0" step="0.01" value={pay} onChange={(e) => setPay(e.target.value)} required />
+                </div>
+              </div>
+
+              <div style={fieldGroupStyle}>
+                <label style={labelStyle}>Login Password <span style={{ color: "#94a3b8", fontWeight: 400, textTransform: "none", letterSpacing: 0 }}>(optional — lets them sign in)</span></label>
+                <input style={inputStyle} type="password" placeholder="Set a password…" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="new-password" />
+              </div>
+
+              <div style={fieldGroupStyle}>
+                <label style={labelStyle}>Available Days</label>
+                <div style={daysGridStyle}>
+                  {DAYS.map((day) => (
+                    <label key={day} style={{ ...dayChipStyle, ...(days.includes(day) ? dayChipActiveStyle : {}) }}>
+                      <input type="checkbox" checked={days.includes(day)} onChange={() => handleDayToggle(day)} style={{ display: "none" }} />
+                      {day.slice(0, 3)}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div style={fieldGroupStyle}>
+                <label style={labelStyle}>Available Hours</label>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                  <input style={{ ...inputStyle, flex: 1 }} type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} required />
+                  <span style={{ color: "#94a3b8", fontWeight: 500 }}>to</span>
+                  <input style={{ ...inputStyle, flex: 1 }} type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} required />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: "0.75rem" }}>
+                <button type="submit" style={primaryBtnStyle} disabled={submitting}>
+                  {submitting ? "Saving…" : editingId ? "Update Person" : "Add Person"}
+                </button>
+                {editingId && (
+                  <button type="button" onClick={handleCancelEdit} style={ghostBtnStyle}>
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </form>
           </div>
-        ))}
+        )}
+
+        {/* VIEWER BANNER */}
+        {role === "viewer" && (
+          <div style={viewerBannerStyle}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" /><line x1="12" y1="8" x2="12" y2="12" /><line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            You have view-only access. Contact an admin to make changes.
+          </div>
+        )}
+
+        {/* PEOPLE LIST */}
+        <div style={cardStyle}>
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem" }}>
+            <h2 style={{ ...sectionTitleStyle, margin: 0 }}>Team Directory</h2>
+            <span style={badgeStyle}>{people.length} {people.length === 1 ? "person" : "people"}</span>
+          </div>
+
+          {people.length === 0 ? (
+            <p style={{ color: "#94a3b8", textAlign: "center", padding: "2rem 0" }}>No people added yet.</p>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+              {people.map((person) => {
+                const availDays = Object.keys(person.availability || {});
+                const timeRange = availDays.length > 0 ? person.availability[availDays[0]]?.[0] : null;
+                return (
+                  <div key={person.id} style={personRowStyle}>
+                    <div style={avatarStyle}>
+                      {person.name.charAt(0).toUpperCase()}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexWrap: "wrap" }}>
+                        <span style={{ fontWeight: 600, color: "#0f172a", fontSize: "0.95rem" }}>{person.name}</span>
+                        <span style={roleTagStyle}>{person.role}</span>
+                      </div>
+                      <div style={{ color: "#64748b", fontSize: "0.82rem", marginTop: "0.2rem" }}>{person.email}</div>
+                      <div style={{ display: "flex", gap: "1rem", marginTop: "0.35rem", flexWrap: "wrap" }}>
+                        <span style={metaStyle}>${person.pay_per_hour}/hr</span>
+                        {availDays.length > 0 && (
+                          <span style={metaStyle}>{availDays.map((d: string) => d.slice(0, 3)).join(", ")}</span>
+                        )}
+                        {timeRange && <span style={metaStyle}>{timeRange.replace("-", " – ")}</span>}
+                      </div>
+                    </div>
+                    {role === "admin" && (
+                      <div style={{ display: "flex", gap: "0.5rem", flexShrink: 0 }}>
+                        <button onClick={() => handleEdit(person)} style={editBtnStyle}>Edit</button>
+                        <button onClick={() => handleDelete(person.id)} style={deleteBtnStyle}>Delete</button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
     </>
   );
 }
+
+/* ── Styles ── */
+const overlayStyle: React.CSSProperties = {
+  position: "fixed", inset: 0,
+  backgroundColor: "rgba(15,23,42,0.7)",
+  backdropFilter: "blur(8px)",
+  display: "flex", alignItems: "center", justifyContent: "center",
+  zIndex: 9999,
+};
+
+const loginCardStyle: React.CSSProperties = {
+  background: "white", borderRadius: "20px",
+  padding: "2.5rem", width: "360px",
+  boxShadow: "0 25px 60px rgba(0,0,0,0.25)",
+};
+
+const iconStyle: React.CSSProperties = {
+  width: "56px", height: "56px", borderRadius: "50%",
+  background: "linear-gradient(135deg,#1a202c,#2d3748)",
+  display: "inline-flex", alignItems: "center", justifyContent: "center",
+};
+
+const pageStyle: React.CSSProperties = {
+  maxWidth: "780px", margin: "0 auto",
+  padding: "6rem 1.5rem 3rem",
+  display: "flex", flexDirection: "column", gap: "1.5rem",
+};
+
+const cardStyle: React.CSSProperties = {
+  background: "white", borderRadius: "16px",
+  padding: "1.75rem",
+  boxShadow: "0 1px 4px rgba(0,0,0,0.06), 0 4px 16px rgba(0,0,0,0.06)",
+  border: "1px solid #f1f5f9",
+};
+
+const sectionTitleStyle: React.CSSProperties = {
+  fontSize: "1.1rem", fontWeight: 700, color: "#0f172a", margin: "0 0 1.25rem",
+};
+
+const formStyle: React.CSSProperties = {
+  display: "flex", flexDirection: "column", gap: "1.1rem",
+};
+
+const twoColStyle: React.CSSProperties = {
+  display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem",
+};
+
+const fieldGroupStyle: React.CSSProperties = {
+  display: "flex", flexDirection: "column", gap: "0.35rem",
+};
+
+const labelStyle: React.CSSProperties = {
+  fontSize: "0.8rem", fontWeight: 600, color: "#475569", textTransform: "uppercase", letterSpacing: "0.04em",
+};
+
+const inputStyle: React.CSSProperties = {
+  padding: "0.65rem 0.875rem",
+  border: "1.5px solid #e2e8f0",
+  borderRadius: "10px",
+  fontSize: "0.95rem",
+  color: "#0f172a",
+  outline: "none",
+  background: "#f8fafc",
+  width: "100%",
+  boxSizing: "border-box",
+  transition: "border-color 0.15s",
+};
+
+const daysGridStyle: React.CSSProperties = {
+  display: "flex", flexWrap: "wrap", gap: "0.5rem",
+};
+
+const dayChipStyle: React.CSSProperties = {
+  padding: "0.4rem 0.875rem",
+  borderRadius: "999px",
+  border: "1.5px solid #e2e8f0",
+  cursor: "pointer",
+  fontSize: "0.82rem",
+  fontWeight: 500,
+  color: "#64748b",
+  userSelect: "none",
+  transition: "all 0.15s",
+  background: "#f8fafc",
+};
+
+const dayChipActiveStyle: React.CSSProperties = {
+  background: "#0f172a", color: "white", borderColor: "#0f172a",
+};
+
+const primaryBtnStyle: React.CSSProperties = {
+  padding: "0.7rem 1.5rem",
+  background: "#0f172a", color: "white",
+  border: "none", borderRadius: "10px",
+  fontSize: "0.9rem", fontWeight: 600,
+  cursor: "pointer",
+};
+
+const ghostBtnStyle: React.CSSProperties = {
+  padding: "0.7rem 1.25rem",
+  background: "transparent", color: "#64748b",
+  border: "1.5px solid #e2e8f0", borderRadius: "10px",
+  fontSize: "0.9rem", fontWeight: 500,
+  cursor: "pointer",
+};
+
+const viewerBannerStyle: React.CSSProperties = {
+  display: "flex", alignItems: "center", gap: "0.6rem",
+  background: "#eff6ff", color: "#3b82f6",
+  border: "1px solid #bfdbfe",
+  borderRadius: "12px", padding: "0.875rem 1.25rem",
+  fontSize: "0.875rem", fontWeight: 500,
+};
+
+const badgeStyle: React.CSSProperties = {
+  background: "#f1f5f9", color: "#64748b",
+  borderRadius: "999px", padding: "0.25rem 0.75rem",
+  fontSize: "0.8rem", fontWeight: 500,
+};
+
+const personRowStyle: React.CSSProperties = {
+  display: "flex", alignItems: "flex-start", gap: "1rem",
+  padding: "1rem 1.25rem",
+  borderRadius: "12px", border: "1px solid #f1f5f9",
+  background: "#fafafa",
+  transition: "box-shadow 0.15s",
+};
+
+const avatarStyle: React.CSSProperties = {
+  width: "42px", height: "42px", borderRadius: "50%",
+  background: "linear-gradient(135deg,#1a202c,#4a5568)",
+  color: "white", display: "flex", alignItems: "center", justifyContent: "center",
+  fontWeight: 700, fontSize: "1rem", flexShrink: 0,
+};
+
+const roleTagStyle: React.CSSProperties = {
+  background: "#f1f5f9", color: "#475569",
+  borderRadius: "999px", padding: "0.1rem 0.6rem",
+  fontSize: "0.75rem", fontWeight: 500,
+};
+
+const metaStyle: React.CSSProperties = {
+  color: "#94a3b8", fontSize: "0.8rem",
+};
+
+const editBtnStyle: React.CSSProperties = {
+  padding: "0.4rem 0.875rem",
+  background: "white", color: "#475569",
+  border: "1.5px solid #e2e8f0", borderRadius: "8px",
+  fontSize: "0.8rem", fontWeight: 500, cursor: "pointer",
+};
+
+const deleteBtnStyle: React.CSSProperties = {
+  padding: "0.4rem 0.875rem",
+  background: "white", color: "#ef4444",
+  border: "1.5px solid #fecaca", borderRadius: "8px",
+  fontSize: "0.8rem", fontWeight: 500, cursor: "pointer",
+};
+
+const loadingStyle: React.CSSProperties = {
+  height: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
+};
+
+const spinnerStyle: React.CSSProperties = {
+  width: "36px", height: "36px",
+  border: "3px solid #e2e8f0",
+  borderTopColor: "#0f172a",
+  borderRadius: "50%",
+  animation: "spin 0.7s linear infinite",
+};
