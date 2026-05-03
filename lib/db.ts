@@ -12,6 +12,27 @@ db.pragma("foreign_keys = ON");
 
 // Core tables
 db.exec(`
+  CREATE TABLE IF NOT EXISTS people (
+    id           INTEGER PRIMARY KEY AUTOINCREMENT,
+    name         TEXT NOT NULL,
+    email        TEXT UNIQUE,
+    role         TEXT,
+    pay_per_hour REAL,
+    availability TEXT,
+    password     TEXT,
+    created_at   DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS clock_entries (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    person_ID        INTEGER NOT NULL REFERENCES people(id) ON DELETE CASCADE,
+    clock_in         TEXT NOT NULL,
+    clock_out        TEXT,
+    date             TEXT NOT NULL,
+    duration_minutes REAL,
+    created_at       DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
   CREATE TABLE IF NOT EXISTS teams (
     id   INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
