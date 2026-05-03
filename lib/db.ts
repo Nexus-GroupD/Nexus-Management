@@ -62,3 +62,6 @@ db.transaction(() => {
 })();
 
 export default db;
+export function getDb() {
+  return db;
+}
