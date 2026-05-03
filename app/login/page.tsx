@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
@@ -8,15 +8,7 @@ export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError]       = useState("");
-  const [loading, setLoading]   = useState(true);
   const [submitting, setSubmitting] = useState(false);
-
-  // If already logged in, go straight to home
-  useEffect(() => {
-    fetch("/api/me")
-      .then((r) => { if (r.ok) router.replace("/"); })
-      .finally(() => setLoading(false));
-  }, [router]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,8 +27,6 @@ export default function LoginPage() {
       setSubmitting(false);
     }
   };
-
-  if (loading) return <div style={{ height: "100vh", background: "#0f172a" }} />;
 
   return (
     <div style={pageStyle}>

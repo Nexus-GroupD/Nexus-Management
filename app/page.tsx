@@ -11,11 +11,6 @@ type Shift = { shiftId: number; date: string; startTime: string; endTime: string
 const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-function formatTime(t: string) {
-  // Already formatted like "9:00 AM" or "17:00" — return as-is
-  return t;
-}
-
 export default function Home() {
   const router = useRouter();
   const [me, setMe]         = useState<Me | null>(null);
@@ -158,7 +153,7 @@ export default function Home() {
                   selectedShifts.map((s) => (
                     <div key={s.shiftId} style={shiftPillStyle}>
                       <span style={shiftDotInlineStyle} />
-                      {formatTime(s.startTime)} – {formatTime(s.endTime)}
+                      {s.startTime} – {s.endTime}
                     </div>
                   ))
                 )}
@@ -189,7 +184,7 @@ export default function Home() {
                           {isToday ? "Today" : d.toLocaleDateString("en-US",{weekday:"short"})}
                         </div>
                         <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "0.1rem" }}>
-                          {formatTime(s.startTime)} – {formatTime(s.endTime)}
+                          {s.startTime} – {s.endTime}
                         </div>
                       </div>
                       {isToday && <span style={todayBadgeStyle}>Today</span>}

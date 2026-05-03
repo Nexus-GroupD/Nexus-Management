@@ -11,12 +11,6 @@ export default function AddPersonPage() {
   const [role, setRole] = useState<Role>(null);
   const [authLoading, setAuthLoading] = useState(true);
 
-  // Login overlay state
-  const [loginUsername, setLoginUsername] = useState("");
-  const [loginPassword, setLoginPassword] = useState("");
-  const [loginError, setLoginError] = useState("");
-  const [loginLoading, setLoginLoading] = useState(false);
-
   // Form state
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -51,31 +45,6 @@ export default function AddPersonPage() {
       setPeople(Array.isArray(data) ? data : []);
     } catch {
       setPeople([]);
-    }
-  };
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoginLoading(true);
-    setLoginError("");
-    try {
-      const res = await fetch("/api/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username: loginUsername, password: loginPassword }),
-        credentials: "include",
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setRole(data.role);
-      } else {
-        setLoginError("Invalid username or password");
-        setLoginPassword("");
-      }
-    } catch {
-      setLoginError("Something went wrong. Try again.");
-    } finally {
-      setLoginLoading(false);
     }
   };
 
@@ -160,53 +129,6 @@ export default function AddPersonPage() {
   return (
     <>
       <Navbar pageTitle={editingId ? "Edit Person" : "People"} />
-
-      {/* LOGIN OVERLAY */}
-      {!role && (
-        <div style={overlayStyle}>
-          <div style={loginCardStyle}>
-            <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
-              <div style={iconStyle}>
-                <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <circle cx="12" cy="7" r="4" />
-                </svg>
-              </div>
-              <h2 style={{ margin: "0.75rem 0 0.25rem", fontSize: "1.4rem", fontWeight: 700, color: "#0f172a" }}>Sign In</h2>
-              <p style={{ margin: 0, color: "#64748b", fontSize: "0.9rem" }}>Access the People directory</p>
-            </div>
-
-            <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "0.875rem" }}>
-              <div style={fieldGroupStyle}>
-                <label style={labelStyle}>Username</label>
-                <input
-                  style={inputStyle}
-                  placeholder="Enter username"
-                  value={loginUsername}
-                  onChange={(e) => setLoginUsername(e.target.value)}
-                  autoFocus
-                  required
-                />
-              </div>
-              <div style={fieldGroupStyle}>
-                <label style={labelStyle}>Password</label>
-                <input
-                  style={inputStyle}
-                  type="password"
-                  placeholder="Enter password"
-                  value={loginPassword}
-                  onChange={(e) => setLoginPassword(e.target.value)}
-                  required
-                />
-              </div>
-              {loginError && <p style={{ color: "#ef4444", fontSize: "0.85rem", margin: 0, textAlign: "center" }}>{loginError}</p>}
-              <button type="submit" style={primaryBtnStyle} disabled={loginLoading}>
-                {loginLoading ? "Signing in…" : "Sign In"}
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
 
       {/* MAIN CONTENT */}
       <div style={pageStyle}>
@@ -344,26 +266,6 @@ export default function AddPersonPage() {
 }
 
 /* ── Styles ── */
-const overlayStyle: React.CSSProperties = {
-  position: "fixed", inset: 0,
-  backgroundColor: "rgba(15,23,42,0.7)",
-  backdropFilter: "blur(8px)",
-  display: "flex", alignItems: "center", justifyContent: "center",
-  zIndex: 9999,
-};
-
-const loginCardStyle: React.CSSProperties = {
-  background: "white", borderRadius: "20px",
-  padding: "2.5rem", width: "360px",
-  boxShadow: "0 25px 60px rgba(0,0,0,0.25)",
-};
-
-const iconStyle: React.CSSProperties = {
-  width: "56px", height: "56px", borderRadius: "50%",
-  background: "linear-gradient(135deg,#1a202c,#2d3748)",
-  display: "inline-flex", alignItems: "center", justifyContent: "center",
-};
-
 const pageStyle: React.CSSProperties = {
   maxWidth: "780px", margin: "0 auto",
   padding: "6rem 1.5rem 3rem",
