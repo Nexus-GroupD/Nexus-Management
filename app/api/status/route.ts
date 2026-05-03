@@ -4,10 +4,10 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import getDb from '@/lib/db';
+
 import { todayString } from '@/lib/time';
 import type { ApiResponse, StatusResponse } from '@/type';
-
+import { getDb } from '@/lib/db';
 export async function GET(req: NextRequest) {
   try {
     const person_ID = Number(req.nextUrl.searchParams.get('person_ID'));
@@ -20,13 +20,6 @@ export async function GET(req: NextRequest) {
     }
 
     const db = getDb();
-    if (!db) {
-      return NextResponse.json<ApiResponse<null>>(
-        { success: false, error: 'Database unavailable.' },
-        { status: 503 }
-      );
-    }
-
     const entry = db.prepare(
       `SELECT clock_in FROM clock_entries WHERE person_ID = ? AND date = ? AND clock_out IS NULL`
     ).get(person_ID, todayString()) as { clock_in: string } | undefined;
