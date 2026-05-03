@@ -7,7 +7,7 @@ import {
   EMPLOYEE_PERMISSIONS,
 } from "@/lib/permissions";
 
-const db = new Database(process.cwd() + "/nexus.db");
+const db = new Database(process.env.DB_PATH ?? process.cwd() + "/nexus.db");
 db.pragma("foreign_keys = ON");
 
 // Core tables
