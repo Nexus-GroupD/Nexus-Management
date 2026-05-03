@@ -1,5 +1,22 @@
-export type Permission = typeof ALL_PERMISSIONS[number];
+// Define the keys explicitly as a const tuple first
+export const ALL_PERMISSION_KEYS = [
+  "people.view", "people.add", "people.edit", "people.delete",
+  "pay.view", "pay.edit",
+  "schedule.view", "schedule.edit", "schedule.assign_shifts",
+  "availability.view", "availability.edit", "availability.override",
+  "accounts.create_login", "accounts.set_password", "accounts.reset_password",
+  "accounts.force_password_reset", "accounts.enable_disable",
+  "emails.view", "emails.edit",
+  "roles.view", "roles.create", "roles.edit", "roles.delete", "roles.assign",
+  "data.view_sensitive", "data.export", "data.import",
+  "audit.view", "audit.edit",
+  "time_off.approve",
+  "departments.manage",
+  "teams.view", "teams.edit",
+  "all.view_all", "system.settings",
+] as const;
 
+export type Permission = typeof ALL_PERMISSION_KEYS[number];
 export const PERMISSION_GROUPS = [
   {
     label: "People",
