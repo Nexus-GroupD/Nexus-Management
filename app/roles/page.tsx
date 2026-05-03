@@ -1,3 +1,4 @@
+import { PERMISSION_GROUPS, ALL_PERMISSIONS, Permission } from "@/lib/permissions";
 "use client";
 
 import { useState, useEffect } from "react";
@@ -61,7 +62,7 @@ export default function RolesPage() {
   };
 
   const toggleGroup = (roleId: number, groupPerms: readonly { key: string }[]) => {
-    const keys = groupPerms.map((p) => p.key);
+    const keys = groupPerms.map((p: { key: Permission }) => p.key);
     setPending((prev) => {
       const cur = prev[roleId] ?? [];
       const allIn = keys.every((k) => cur.includes(k));
@@ -212,7 +213,7 @@ export default function RolesPage() {
           const isExpanded  = expandedId === role.id;
           const isDirty     = JSON.stringify(cur.slice().sort()) !== JSON.stringify(role.permissions.slice().sort());
           const allChecked  = ALL_PERMISSIONS.every((p) => cur.includes(p));
-          const someChecked = ALL_PERMISSIONS.some((p) => cur.includes(p));
+          const someChecked =  ALL_PERMISSIONS.some((p: Permission) => cur.includes(p));
 
           return (
             <div key={role.id} style={cardStyle}>
