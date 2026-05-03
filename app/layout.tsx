@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
-import '@/components/Navbar.css';
+import '@/components/Navbar';
+import Navbar from '@/components/Navbar';
+import Chatbot from '@/components/ChatBot';
 
 export const metadata: Metadata = {
   title: 'Nexus Management',
@@ -13,7 +15,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body style={{ margin: 0 }}>{children}</body>
+      <body style={{ margin: 0 }}>
+        <Navbar />
+        {children}
+        <Chatbot />
+      </body>
     </html>
   );
 }
