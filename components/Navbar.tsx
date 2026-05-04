@@ -13,7 +13,7 @@ type Me = { id: number; name: string; email: string; dbRole: string; role: strin
 
 const NAV_LINKS = [
   { href: '/',           label: 'Home',      icon: '⌂',  adminOnly: false },
-  { href: '/schedule',   label: 'Schedule',  icon: '📅', adminOnly: false },
+  { href: '/schedule',   label: 'Schedule',  icon: '📅', adminOnly: true  },
   { href: '/dashboard',  label: 'Dashboard', icon: '◈',  adminOnly: false },
   { href: '/history',    label: 'History',   icon: '⏱', adminOnly: false },
   { href: '/messages',   label: 'Messages',  icon: '✉',  adminOnly: false },
