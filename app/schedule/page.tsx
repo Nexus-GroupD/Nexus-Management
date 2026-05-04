@@ -10,7 +10,7 @@ interface ShiftFromAPI {
   startTime: string;
   endTime: string;
   personId: number | null;
-  employeeName?: string | null;
+  employee?: { id: number; name: string } | null;
 }
 
 interface ShiftDisplay {
@@ -61,7 +61,7 @@ const Schedule = () => {
           start_time: s.startTime,
           end_time: s.endTime,
           person_ID: s.personId ?? undefined,
-          employee_name: s.employeeName ?? undefined,
+          employee_name: s.employee?.name,
         }));
         return mapped;
       }

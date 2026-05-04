@@ -6,7 +6,7 @@ import Navbar from "@/components/Navbar";
 import FancyGreeting from "@/components/FancyGreeting";
 
 type Me = { id: number; name: string; dbRole: string; role: string };
-type Shift = { shiftId: number; date: string; startTime: string; endTime: string; personId: number | null; employeeName?: string | null };
+type Shift = { shiftId: number; date: string; startTime: string; endTime: string; personId: number | null; employee?: { id: number; name: string } | null };
 
 const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -181,9 +181,9 @@ export default function Home() {
                         <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "0.1rem" }}>
                           {s.startTime} – {s.endTime}
                         </div>
-                        {me.id === 0 && s.employeeName && (
+                        {me.id === 0 && s.employee?.name && (
                           <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "0.1rem" }}>
-                            {s.employeeName}
+                            {s.employee.name}
                           </div>
                         )}
                       </div>
