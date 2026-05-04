@@ -23,7 +23,7 @@ export async function GET(req: Request) {
 
   const isAdmin = role === "admin";
   return NextResponse.json({
-    id: 0,
+    id: 1,
     name: isAdmin ? "Admin" : "Viewer",
     email: "",
     dbRole: isAdmin ? "Manager" : "Employee",
