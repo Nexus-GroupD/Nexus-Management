@@ -6,7 +6,7 @@ import Navbar from "@/components/Navbar";
 import FancyGreeting from "@/components/FancyGreeting";
 
 type Me = { id: number; name: string; dbRole: string; role: string };
-type Shift = { shiftId: number; date: string; startTime: string; endTime: string; personId: number | null };
+type Shift = { shiftId: number; date: string; startTime: string; endTime: string; personId: number | null; employeeName?: string | null };
 
 const DAYS_OF_WEEK = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
@@ -29,13 +29,14 @@ export default function Home() {
       const meData: Me = await meRes.json();
       setMe(meData);
 
-      if (meData.id > 0) {
-        const shiftRes = await fetch("/api/shifts");
-        const shiftJson = await shiftRes.json();
-        if (shiftJson.success && Array.isArray(shiftJson.data)) {
-          const mine = shiftJson.data.filter((s: Shift) => s.personId === meData.id);
-          setShifts(mine);
-        }
+      const shiftRes = await fetch("/api/shifts");
+      const shiftJson = await shiftRes.json();
+      if (shiftJson.success && Array.isArray(shiftJson.data)) {
+        const isAdmin = meData.id === 0;
+        const visible = isAdmin
+          ? shiftJson.data
+          : shiftJson.data.filter((s: Shift) => s.personId === meData.id);
+        setShifts(visible);
       }
       setLoading(false);
     };
@@ -160,9 +161,7 @@ export default function Home() {
           {/* Upcoming shifts sidebar */}
           <div style={sidebarStyle}>
             <h3 style={sidebarTitleStyle}>Upcoming Shifts</h3>
-            {me.id === 0 ? (
-              <p style={emptyStyle}>System accounts don't have assigned shifts.</p>
-            ) : upcoming.length === 0 ? (
+            {upcoming.length === 0 ? (
               <p style={emptyStyle}>No upcoming shifts scheduled.</p>
             ) : (
               <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
@@ -182,6 +181,11 @@ export default function Home() {
                         <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "0.1rem" }}>
                           {s.startTime} – {s.endTime}
                         </div>
+                        {me.id === 0 && s.employeeName && (
+                          <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "0.1rem" }}>
+                            {s.employeeName}
+                          </div>
+                        )}
                       </div>
                       {isToday && <span style={todayBadgeStyle}>Today</span>}
                     </div>

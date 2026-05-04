@@ -28,7 +28,6 @@ export function getPermissions(req: Request): string[] {
 
   const uid = getUserId(req);
 
-  // System admin (no uid or uid=0, admin cookie) → full access
   if (!uid || uid === 0) {
     return cookieRole === "admin" ? [...ALL_PERMISSIONS] : [];
   }

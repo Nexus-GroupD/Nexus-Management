@@ -10,7 +10,7 @@ interface ShiftFromAPI {
   startTime: string;
   endTime: string;
   personId: number | null;
-  employee?: { id: number; name: string } | null;
+  employeeName?: string | null;
 }
 
 interface ShiftDisplay {
@@ -26,12 +26,7 @@ const Schedule = () => {
   const [shifts, setShifts] = useState<ShiftDisplay[]>([]);
   const [openDropdown, setOpenDropdown] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
-  const [people] = useState<{ id: number; name: string }[]>([
-    { id: 1, name: 'Alex Rivera' },
-    { id: 2, name: 'Jordan Lee' },
-    { id: 3, name: 'Sam Patel' },
-    { id: 4, name: 'Casey Morgan' },
-  ]);
+  const [people, setPeople] = useState<{ id: number; name: string }[]>([]);
 
   // Generate default shifts for next 7 days and save to DB
   const seedShifts = async () => {
@@ -66,7 +61,7 @@ const Schedule = () => {
           start_time: s.startTime,
           end_time: s.endTime,
           person_ID: s.personId ?? undefined,
-          employee_name: s.employee?.name,
+          employee_name: s.employeeName ?? undefined,
         }));
         return mapped;
       }
@@ -77,8 +72,15 @@ const Schedule = () => {
   };
 
   useEffect(() => {
-    const loadShifts = async () => {
-      let data = await fetchShifts();
+    const loadData = async () => {
+      const [peopleRes, shiftsData] = await Promise.all([
+        fetch('/api/people').then(r => r.json()).catch(() => []),
+        fetchShifts(),
+      ]);
+      if (Array.isArray(peopleRes)) {
+        setPeople(peopleRes.map((p: { id: number; name: string }) => ({ id: p.id, name: p.name })));
+      }
+      let data = shiftsData;
       if (data.length === 0) {
         await seedShifts();
         data = await fetchShifts();
@@ -86,7 +88,7 @@ const Schedule = () => {
       setShifts(data);
       setLoading(false);
     };
-    loadShifts();
+    loadData();
   }, []);
 
   const handleAssignment = async (shiftId: number, personId: number | undefined) => {

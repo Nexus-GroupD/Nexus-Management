@@ -53,6 +53,14 @@ db.exec(`
     is_builtin       INTEGER NOT NULL DEFAULT 0,
     permissions      TEXT NOT NULL DEFAULT '[]'
   );
+
+  CREATE TABLE IF NOT EXISTS shifts (
+    shift_ID   INTEGER PRIMARY KEY AUTOINCREMENT,
+    date       TEXT NOT NULL,
+    start_time TEXT NOT NULL,
+    end_time   TEXT NOT NULL,
+    person_ID  INTEGER REFERENCES people(id) ON DELETE SET NULL
+  );
 `);
 
 // Add permissions column to existing installations that predate this migration
