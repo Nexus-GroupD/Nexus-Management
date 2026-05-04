@@ -10,8 +10,9 @@ export async function GET(req: NextRequest) {
   return res;
 }
 
-export async function POST() {
-  const res = NextResponse.json({ success: true });
+export async function POST(req: NextRequest) {
+  const url = new URL("/login", req.url);
+  const res = NextResponse.redirect(url, { status: 303 });
   res.cookies.set("nexus-auth", "", expired);
   res.cookies.set("nexus-uid", "", expired);
   return res;
