@@ -32,7 +32,7 @@ export default function Home() {
       const shiftRes = await fetch("/api/shifts");
       const shiftJson = await shiftRes.json();
       if (shiftJson.success && Array.isArray(shiftJson.data)) {
-        const isAdmin = meData.id === 0;
+        const isAdmin = meData.role === "admin";
         const visible = isAdmin
           ? shiftJson.data
           : shiftJson.data.filter((s: Shift) => s.personId === meData.id);
@@ -188,7 +188,7 @@ export default function Home() {
                         <div style={{ fontSize: "0.8rem", color: "#64748b", marginTop: "0.1rem" }}>
                           {s.startTime} – {s.endTime}
                         </div>
-                        {me.id === 0 && s.employee?.name && (
+                        {me.role === "admin" && s.employee?.name && (
                           <div style={{ fontSize: "0.75rem", color: "#94a3b8", marginTop: "0.1rem" }}>
                             {s.employee.name}
                           </div>
