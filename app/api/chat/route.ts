@@ -13,7 +13,7 @@ async function getShifts() {
   ];
 }
 
-async function getEmployeeShifts(name: string) {
+async function getEmployeeShifts(_name: string) {
   return [
     { date: "2026-05-03", time: "9-5" },
     { date: "2026-05-04", time: "10-4" },

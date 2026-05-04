@@ -1,11 +1,11 @@
 import "@testing-library/jest-dom";
 import { TextEncoder, TextDecoder } from "util";
 
-// Must be set BEFORE importing undici — undici reads these at import time
+// Must be set BEFORE undici loads — it reads these at import time
 (global as any).TextEncoder = TextEncoder;
 (global as any).TextDecoder = TextDecoder;
 
-// Now safe to polyfill Request/Response/Headers
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { Request, Response, Headers } = require("undici");
 (global as any).Request  = Request;
 (global as any).Response = Response;

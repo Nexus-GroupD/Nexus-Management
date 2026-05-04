@@ -69,7 +69,7 @@ function LiveClock() {
     return () => clearInterval(id);
   }, []);
 
-  const hh = String(time.getHours()).padStart(2, "0");
+  
   const mm = String(time.getMinutes()).padStart(2, "0");
   const ss = String(time.getSeconds()).padStart(2, "0");
   const ampm = time.getHours() >= 12 ? "PM" : "AM";

@@ -1,109 +1,66 @@
-export const runtime = "nodejs";
-
 import { NextResponse } from "next/server";
-import db from "@/lib/db";
-import { requireAuth, getUserId } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
-// Ensure messaging tables exist
-db.exec(`
-  CREATE TABLE IF NOT EXISTS conversations (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-
-  CREATE TABLE IF NOT EXISTS conversation_participants (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
-    employee_id     INTEGER NOT NULL REFERENCES people(id)        ON DELETE CASCADE,
-    UNIQUE(conversation_id, employee_id)
-  );
-
-  CREATE TABLE IF NOT EXISTS messages (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
-    sender_id       INTEGER NOT NULL REFERENCES people(id)        ON DELETE CASCADE,
-    content         TEXT    NOT NULL,
-    created_at      DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-`);
-
-function forbidden() {
-  return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-}
-
-/* ── GET /api/conversations?employeeId=N ── */
 export async function GET(req: Request) {
-  if (!requireAuth(req)) return forbidden();
-
-  const { searchParams } = new URL(req.url);
-  const employeeIdParam  = searchParams.get("employeeId");
-
-  if (!employeeIdParam) {
-    return NextResponse.json({ error: "employeeId is required" }, { status: 400 });
-  }
-
-  const employeeId = Number(employeeIdParam);
-  if (Number.isNaN(employeeId)) {
-    return NextResponse.json({ error: "employeeId must be a number" }, { status: 400 });
-  }
-
   try {
-    // Get all conversation IDs this employee is in
-    const convRows = db.prepare(`
-      SELECT DISTINCT c.id, c.created_at, c.updated_at
-      FROM conversations c
-      JOIN conversation_participants cp ON cp.conversation_id = c.id
-      WHERE cp.employee_id = ?
-      ORDER BY c.updated_at DESC
-    `).all(employeeId) as { id: number; created_at: string; updated_at: string }[];
+    const { searchParams } = new URL(req.url);
+    const employeeIdParam = searchParams.get("employeeId");
 
-    const conversations = convRows.map((conv) => {
-      const participants = db.prepare(`
-        SELECT cp.employee_id AS employeeId, p.id, p.name
-        FROM conversation_participants cp
-        JOIN people p ON p.id = cp.employee_id
-        WHERE cp.conversation_id = ?
-      `).all(conv.id) as { employeeId: number; id: number; name: string }[];
+    if (!employeeIdParam) {
+      return NextResponse.json(
+        { error: "employeeId is required" },
+        { status: 400 }
+      );
+    }
 
-      const messages = db.prepare(`
-        SELECT m.id, m.content, m.sender_id AS senderId, m.created_at AS createdAt,
-               p.id AS "sender.id", p.name AS "sender.name"
-        FROM messages m
-        JOIN people p ON p.id = m.sender_id
-        WHERE m.conversation_id = ?
-        ORDER BY m.created_at ASC
-      `).all(conv.id) as any[];
+    const employeeId = Number(employeeIdParam);
 
-      return {
-        id: conv.id,
-        created_at: conv.created_at,
-        updated_at: conv.updated_at,
-        participants: participants.map((p) => ({
-          employeeId: p.employeeId,
-          employee: { id: p.id, name: p.name },
-        })),
-        messages: messages.map((m) => ({
-          id: m.id,
-          content: m.content,
-          senderId: m.senderId,
-          createdAt: m.createdAt,
-          sender: { id: m["sender.id"], name: m["sender.name"] },
-        })),
-      };
+    if (Number.isNaN(employeeId)) {
+      return NextResponse.json(
+        { error: "employeeId must be a number" },
+        { status: 400 }
+      );
+    }
+
+    const conversations = await prisma.conversation.findMany({
+      where: {
+        participants: {
+          some: {
+            employeeId,
+          },
+        },
+      },
+      include: {
+        participants: {
+          include: {
+            employee: true,
+          },
+        },
+        messages: {
+          include: {
+            sender: true,
+          },
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
+      },
+      orderBy: {
+        updatedAt: "desc",
+      },
     });
 
     return NextResponse.json(conversations);
   } catch (error) {
     console.error("Error fetching conversations:", error);
-    return NextResponse.json({ error: "Failed to fetch conversations" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to fetch conversations" },
+      { status: 500 }
+    );
   }
 }
 
-/* ── POST /api/conversations ── */
 export async function POST(req: Request) {
-  if (!requireAuth(req)) return forbidden();
-
   try {
     const { employeeId, otherEmployeeId } = await req.json();
 
@@ -121,57 +78,38 @@ export async function POST(req: Request) {
       );
     }
 
-    // Check if conversation already exists between these two
-    const existing = db.prepare(`
-      SELECT c.id FROM conversations c
-      JOIN conversation_participants cp1 ON cp1.conversation_id = c.id AND cp1.employee_id = ?
-      JOIN conversation_participants cp2 ON cp2.conversation_id = c.id AND cp2.employee_id = ?
-    `).get(Number(employeeId), Number(otherEmployeeId)) as { id: number } | undefined;
+    const conversation = await prisma.conversation.create({
+      data: {
+        participants: {
+          create: [
+            { employeeId: Number(employeeId) },
+            { employeeId: Number(otherEmployeeId) },
+          ],
+        },
+      },
+      include: {
+        participants: {
+          include: {
+            employee: true,
+          },
+        },
+        messages: {
+          include: {
+            sender: true,
+          },
+          orderBy: {
+            createdAt: "asc",
+          },
+        },
+      },
+    });
 
-    if (existing) {
-      // Return existing conversation instead of creating duplicate
-      const participants = db.prepare(`
-        SELECT cp.employee_id AS employeeId, p.id, p.name
-        FROM conversation_participants cp
-        JOIN people p ON p.id = cp.employee_id
-        WHERE cp.conversation_id = ?
-      `).all(existing.id) as any[];
-
-      return NextResponse.json({
-        id: existing.id,
-        participants: participants.map((p) => ({
-          employeeId: p.employeeId,
-          employee: { id: p.id, name: p.name },
-        })),
-        messages: [],
-      });
-    }
-
-    // Create new conversation
-    const result = db.prepare("INSERT INTO conversations DEFAULT VALUES").run() as { lastInsertRowid: number };
-    const convId = result.lastInsertRowid;
-
-    db.prepare("INSERT INTO conversation_participants (conversation_id, employee_id) VALUES (?, ?)").run(convId, Number(employeeId));
-    db.prepare("INSERT INTO conversation_participants (conversation_id, employee_id) VALUES (?, ?)").run(convId, Number(otherEmployeeId));
-
-    const participants = db.prepare(`
-      SELECT cp.employee_id AS employeeId, p.id, p.name
-      FROM conversation_participants cp
-      JOIN people p ON p.id = cp.employee_id
-      WHERE cp.conversation_id = ?
-    `).all(convId) as any[];
-
-    return NextResponse.json({
-      id: convId,
-      participants: participants.map((p) => ({
-        employeeId: p.employeeId,
-        employee: { id: p.id, name: p.name },
-      })),
-      messages: [],
-    }, { status: 201 });
-
+    return NextResponse.json(conversation, { status: 201 });
   } catch (error) {
     console.error("Error creating conversation:", error);
-    return NextResponse.json({ error: "Failed to create conversation" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to create conversation" },
+      { status: 500 }
+    );
   }
 }

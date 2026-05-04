@@ -42,7 +42,7 @@ export default function Chatbot() {
       };
 
       setMessages((prev) => [...prev, botMessage]);
-    } catch (err) {
+    } catch (_err) {
       setMessages((prev) => [
         ...prev,
         { role: "assistant", text: "Error connecting to AI." },

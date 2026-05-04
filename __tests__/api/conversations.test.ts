@@ -36,17 +36,6 @@ function makeRequest(url: string, options: RequestInit = {}): Request {
 
 const mockPrepare = db.prepare as jest.Mock;
 
-function setupPrepare(results: Record<string, unknown[] | unknown>) {
-  mockPrepare.mockImplementation((sql: string) => ({
-    all: jest.fn().mockReturnValue(
-      Object.entries(results).find(([k]) => sql.includes(k))?.[1] ?? []
-    ),
-    get: jest.fn().mockReturnValue(
-      Object.entries(results).find(([k]) => sql.includes(k))?.[1] ?? undefined
-    ),
-    run: jest.fn().mockReturnValue({ lastInsertRowid: 1 }),
-  }));
-}
 
 describe("GET /api/conversations", () => {
   beforeEach(() => {
