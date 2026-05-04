@@ -2,8 +2,14 @@ export const runtime = "nodejs";
 
 import { NextRequest, NextResponse } from "next/server";
 import db from "@/lib/db";
+import { requireAuth, hasPermission } from "@/lib/auth";
 
-export async function GET() {
+function forbidden() {
+  return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+}
+
+export async function GET(req: NextRequest) {
+  if (!requireAuth(req)) return forbidden();
   try {
     const rows = db.prepare(`
       SELECT s.shift_ID AS shiftId, s.date, s.start_time AS startTime,
@@ -31,6 +37,7 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+  if (!hasPermission(req, "schedule.edit")) return forbidden();
   try {
     const body = await req.json();
     const { date, startTime, endTime } = body;
@@ -60,6 +67,7 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
+  if (!hasPermission(req, "schedule.assign_shifts")) return forbidden();
   try {
     const body = await req.json();
     const personId = body.personId != null ? Number(body.personId) : null;
