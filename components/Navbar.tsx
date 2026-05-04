@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import './Navbar.css';
 
 interface NavbarProps {
@@ -28,7 +28,6 @@ const Navbar: React.FC<NavbarProps> = ({ pageTitle = 'Nexus Management' }) => {
   const menuRef    = useRef<HTMLDivElement>(null);
   const profileRef = useRef<HTMLDivElement>(null);
   const pathname   = usePathname();
-  const router     = useRouter();
 
   useEffect(() => {
     fetch('/api/me')
@@ -50,9 +49,7 @@ const Navbar: React.FC<NavbarProps> = ({ pageTitle = 'Nexus Management' }) => {
 
   const handleLogout = async () => {
     await fetch('/api/logout', { method: 'POST' });
-    setMe(null);
-    setProfileOpen(false);
-    router.push('/login');
+    window.location.href = '/login';
   };
 
   const initial = me?.name?.charAt(0).toUpperCase() ?? '?';
