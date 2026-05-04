@@ -18,6 +18,7 @@ const NAV_LINKS = [
   { href: '/history',    label: 'History',   icon: '⏱', adminOnly: false },
   { href: '/messages',   label: 'Messages',  icon: '✉',  adminOnly: false },
   { href: '/add-person', label: 'People',    icon: '👥', adminOnly: false },
+  { href: '/announcements', label: 'Announcements', icon: '📢', adminOnly: false },
   { href: '/roles',      label: 'Roles',     icon: '🏷',  adminOnly: true  },
 ];
 
