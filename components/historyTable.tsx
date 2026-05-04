@@ -81,5 +81,3 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ personId, limit = 20, emplo
 };
 
 export default HistoryTable;
-export default HistoryTable;
-
