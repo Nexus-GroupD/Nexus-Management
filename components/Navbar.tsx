@@ -56,6 +56,12 @@ const Navbar: React.FC<NavbarProps> = ({ pageTitle = 'Nexus Management' }) => {
 
   useEffect(() => { setIsOpen(false); setProfileOpen(false); }, [pathname]);
 
+  const handleLogout = async () => {
+    sessionStorage.removeItem('nexus-me');
+    const res = await fetch('/api/logout', { method: 'POST' });
+    window.location.replace(res.url || '/login');
+  };
+
   const initial = me?.name?.charAt(0).toUpperCase() ?? '?';
 
   return (
@@ -120,16 +126,14 @@ const Navbar: React.FC<NavbarProps> = ({ pageTitle = 'Nexus Management' }) => {
                 </svg>
                 Settings
               </Link>
-              <form method="POST" action="/api/logout" style={{ display: 'contents' }}>
-                <button type="submit" className="profile-menu-item profile-logout">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-                    <polyline points="16 17 21 12 16 7"/>
-                    <line x1="21" y1="12" x2="9" y2="12"/>
-                  </svg>
-                  Log Out
-                </button>
-              </form>
+              <button onClick={handleLogout} className="profile-menu-item profile-logout">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                  <polyline points="16 17 21 12 16 7"/>
+                  <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                Log Out
+              </button>
             </div>
           )}
         </div>
