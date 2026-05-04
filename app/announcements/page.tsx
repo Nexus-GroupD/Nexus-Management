@@ -29,16 +29,22 @@ export default function AnnouncementsPage() {
   const [canCreate, setCanCreate] = useState(false);
   const [canDelete, setCanDelete] = useState(false);
 
-  // 🔐 Get permissions
-  useEffect(() => {
+  // Get permissions
+    useEffect(() => {
     fetch("/api/me")
-      .then((res) => res.json())
-      .then((data) => {
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+        const isAdmin = data?.role === "admin";
         const perms = data?.permissions || [];
-        setCanCreate(perms.includes("announcements.create"));
-        setCanDelete(perms.includes("announcements.delete"));
-      });
-  }, []);
+
+        setCanCreate(isAdmin && perms.includes("announcements.create"));
+        setCanDelete(isAdmin && perms.includes("announcements.delete"));
+        })
+        .catch(() => {
+        setCanCreate(false);
+        setCanDelete(false);
+        });
+    }, []);
 
   const handlePost = () => {
     if (!title.trim() || !message.trim()) return;
