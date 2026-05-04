@@ -3,8 +3,6 @@ export const runtime = "nodejs";
 import { NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-
 const SYSTEM_PROMPT = `You are the Nexus AI assistant. You help managers and employees with scheduling, shift management, and workforce questions.
 
 Nexus features:
@@ -23,26 +21,31 @@ Rules:
 - If unsure, ask a clarifying question`;
 
 export async function POST(req: Request) {
-  try {
-    if (!process.env.GEMINI_API_KEY) {
-      return NextResponse.json(
-        { reply: "AI assistant is not configured. Please contact your administrator." },
-        { status: 503 }
-      );
-    }
+  const apiKey = process.env.GEMINI_API_KEY;
 
+  if (!apiKey) {
+    console.error("[chat] GEMINI_API_KEY is not set");
+    return NextResponse.json(
+      { reply: "AI assistant is not configured. Please contact your administrator." },
+      { status: 503 }
+    );
+  }
+
+  try {
     const { messages } = await req.json();
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return NextResponse.json({ reply: "No messages provided." }, { status: 400 });
     }
 
+    const genAI = new GoogleGenerativeAI(apiKey);
+
     const model = genAI.getGenerativeModel({
-      model: "gemini-1.5-flash",
+      model: "gemini-2.0-flash",
       systemInstruction: SYSTEM_PROMPT,
     });
 
-    // Convert message history for Gemini (exclude the last user message)
+    // Build history from all but the last message
     const history = messages.slice(0, -1).map((m: { role: string; content: string }) => ({
       role: m.role === "user" ? "user" : "model",
       parts: [{ text: m.content }],
@@ -56,10 +59,11 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ reply });
 
-  } catch (err) {
-    console.error("[chat]", err);
+  } catch (err: any) {
+    // Log the real error so it shows in Railway logs
+    console.error("[chat] Gemini error:", err?.message ?? err);
     return NextResponse.json(
-      { reply: "Error connecting to Nexus AI." },
+      { reply: `AI error: ${err?.message ?? "Unknown error"}` },
       { status: 500 }
     );
   }
