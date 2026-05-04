@@ -12,7 +12,8 @@ export const ALL_PERMISSION_KEYS = [
   "time_off.approve",
   "departments.manage",
   "teams.view", "teams.edit",
-  "all.view_all", "system.settings",
+  "all.view_all", "system.settings","announcements.create",
+"announcements.delete",
 ] as const;
 
 export type Permission = (typeof ALL_PERMISSION_KEYS)[number];

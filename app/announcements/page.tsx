@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 
 type Announcement = {
@@ -25,6 +25,20 @@ export default function AnnouncementsPage() {
   const [title, setTitle] = useState("");
   const [message, setMessage] = useState("");
   const [category, setCategory] = useState("General");
+
+  const [canCreate, setCanCreate] = useState(false);
+  const [canDelete, setCanDelete] = useState(false);
+
+  // 🔐 Get permissions
+  useEffect(() => {
+    fetch("/api/me")
+      .then((res) => res.json())
+      .then((data) => {
+        const perms = data.permissions || [];
+        setCanCreate(perms.includes("announcements.create"));
+        setCanDelete(perms.includes("announcements.delete"));
+      });
+  }, []);
 
   const handlePost = () => {
     if (!title.trim() || !message.trim()) return;
@@ -52,39 +66,49 @@ export default function AnnouncementsPage() {
       <Navbar pageTitle="Announcements" />
 
       <main className="ann-page">
-        {/* CREATE */}
-        <section className="ann-card">
-          <h3 className="section-title">Create Announcement</h3>
 
-          <div className="ann-form">
-            <input
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              placeholder="Announcement title..."
-            />
-
-            <select value={category} onChange={(e) => setCategory(e.target.value)}>
-              <option>General</option>
-              <option>Schedule</option>
-              <option>Reminder</option>
-              <option>Urgent</option>
-            </select>
-
-            <textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              placeholder="Write announcement details..."
-              rows={4}
-            />
-
-            <button
-              onClick={handlePost}
-              disabled={!title.trim() || !message.trim()}
-            >
-              Post Announcement
-            </button>
+        {/* 🔔 VIEW ONLY MESSAGE */}
+        {!canCreate && (
+          <div className="info-banner">
+            You have view-only access. Contact an admin to make changes.
           </div>
-        </section>
+        )}
+
+        {/* CREATE (ONLY IF ALLOWED) */}
+        {canCreate && (
+          <section className="ann-card">
+            <h3 className="section-title">Create Announcement</h3>
+
+            <div className="ann-form">
+              <input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Announcement title..."
+              />
+
+              <select value={category} onChange={(e) => setCategory(e.target.value)}>
+                <option>General</option>
+                <option>Schedule</option>
+                <option>Reminder</option>
+                <option>Urgent</option>
+              </select>
+
+              <textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                placeholder="Write announcement details..."
+                rows={4}
+              />
+
+              <button
+                onClick={handlePost}
+                disabled={!title.trim() || !message.trim()}
+              >
+                Post Announcement
+              </button>
+            </div>
+          </section>
+        )}
 
         {/* LIST */}
         <section className="ann-section">
@@ -100,9 +124,16 @@ export default function AnnouncementsPage() {
                     <span className={`badge ${a.category.toLowerCase()}`}>
                       {a.category}
                     </span>
-                    <button onClick={() => handleDelete(a.id)} className="delete">
-                      Delete
-                    </button>
+
+                    {/* DELETE ONLY IF ALLOWED */}
+                    {canDelete && (
+                      <button
+                        onClick={() => handleDelete(a.id)}
+                        className="delete"
+                      >
+                        Delete
+                      </button>
+                    )}
                   </div>
 
                   <h2 className="title">{a.title}</h2>
@@ -116,7 +147,6 @@ export default function AnnouncementsPage() {
       </main>
 
       <style>{`
-        /* FIX OVERFLOW/SPACING */
         .ann-page *,
         .ann-page *::before,
         .ann-page *::after {
@@ -132,13 +162,21 @@ export default function AnnouncementsPage() {
           gap: 1.5rem;
         }
 
+        .info-banner {
+          background: rgba(66,153,225,0.1);
+          border: 1px solid rgba(66,153,225,0.3);
+          color: #63b3ed;
+          padding: 0.75rem 1rem;
+          border-radius: 10px;
+          font-size: 0.9rem;
+        }
+
         .section-title {
           font-size: 0.8rem;
           font-weight: 700;
           color: #718096;
           text-transform: uppercase;
-          letter-spacing: 0.06em;
-          margin: 0 0 0.75rem;
+          margin-bottom: 0.75rem;
         }
 
         .ann-card {
@@ -158,27 +196,20 @@ export default function AnnouncementsPage() {
         .ann-form textarea,
         .ann-form select {
           width: 100%;
-          max-width: 100%;
           padding: 0.7rem;
           border-radius: 10px;
           border: 1px solid rgba(255,255,255,0.1);
           background: #111827;
-          color: #f7fafc;
+          color: white;
         }
 
         .ann-form button {
           background: #48bb78;
-          color: #0f172a;
           border: none;
           padding: 0.7rem;
           border-radius: 10px;
           font-weight: 700;
           cursor: pointer;
-        }
-
-        .ann-form button:disabled {
-          opacity: 0.5;
-          cursor: not-allowed;
         }
 
         .ann-list {
@@ -199,7 +230,6 @@ export default function AnnouncementsPage() {
           border-radius: 999px;
           background: rgba(255,255,255,0.06);
           color: #a0aec0;
-          font-weight: 700;
         }
 
         .badge.urgent {
@@ -223,24 +253,19 @@ export default function AnnouncementsPage() {
           border: none;
           padding: 0.3rem 0.7rem;
           border-radius: 999px;
-          font-size: 0.75rem;
           cursor: pointer;
         }
 
         .title {
           color: #f7fafc;
           margin: 0.75rem 0 0.25rem;
-          font-weight: 700;
         }
 
         .message {
           color: #a0aec0;
-          margin: 0;
         }
 
         .time {
-          display: block;
-          margin-top: 0.5rem;
           font-size: 0.75rem;
           color: #718096;
         }

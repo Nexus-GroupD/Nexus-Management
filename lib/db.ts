@@ -86,6 +86,14 @@ function initDb(): Database.Database {
       content         TEXT    NOT NULL,
       created_at      DATETIME DEFAULT CURRENT_TIMESTAMP
     );
+
+    CREATE TABLE IF NOT EXISTS announcements (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      message TEXT NOT NULL,
+      category TEXT NOT NULL DEFAULT 'General',
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   // Migrate shifts table if it was created with old camelCase schema
