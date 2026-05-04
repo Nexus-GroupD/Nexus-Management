@@ -30,9 +30,17 @@ const Navbar: React.FC<NavbarProps> = ({ pageTitle = 'Nexus Management' }) => {
   const pathname   = usePathname();
 
   useEffect(() => {
+    // Load from cache immediately to prevent flash
+    const cached = sessionStorage.getItem('nexus-me');
+    if (cached) { try { setMe(JSON.parse(cached)); } catch { /* ignore */ } }
+
     fetch('/api/me')
       .then((r) => (r.ok ? r.json() : null))
-      .then((d) => setMe(d))
+      .then((d) => {
+        setMe(d);
+        if (d) sessionStorage.setItem('nexus-me', JSON.stringify(d));
+        else sessionStorage.removeItem('nexus-me');
+      })
       .catch(() => setMe(null));
   }, [pathname]);
 
@@ -47,8 +55,9 @@ const Navbar: React.FC<NavbarProps> = ({ pageTitle = 'Nexus Management' }) => {
 
   useEffect(() => { setIsOpen(false); setProfileOpen(false); }, [pathname]);
 
-  const handleLogout = () => {
-    window.location.href = '/api/logout';
+  const handleLogout = async () => {
+    await fetch('/api/logout', { method: 'POST' });
+    window.location.href = '/login';
   };
 
   const initial = me?.name?.charAt(0).toUpperCase() ?? '?';
