@@ -8,6 +8,8 @@ function forbidden() {
   return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
 }
 
+// CWE-89 SQL Injection fix: coerces input to a number and rejects anything that
+// isn't a positive integer before it can reach a SQL query.
 function parsePositiveInt(value: unknown): number | null {
   const n = Number(value);
   return Number.isInteger(n) && n > 0 ? n : null;
