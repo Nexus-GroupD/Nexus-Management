@@ -41,15 +41,23 @@ export async function POST(req: Request) {
     const genAI = new GoogleGenerativeAI(apiKey);
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.0-flash",
+      model: "gemini-2.5-flash",
       systemInstruction: SYSTEM_PROMPT,
     });
 
     // Build history from all but the last message
-    const history = messages.slice(0, -1).map((m: { role: string; content: string }) => ({
-      role: m.role === "user" ? "user" : "model",
-      parts: [{ text: m.content }],
-    }));
+    const history = messages
+  .slice(0, -1)
+  .filter((m: any) => m.role === "user" || m.role === "model")
+  .map((m: any) => ({
+    role: m.role,
+    parts: [{ text: m.content }],
+  }))
+  .filter((m: any, i: number, arr: any[]) => {
+    // ensure first message is user
+    if (i === 0 && m.role !== "user") return false;
+    return true;
+  });
 
     const chat = model.startChat({ history });
 
