@@ -79,7 +79,7 @@ export default function Home() {
 
   // Upcoming shifts (next 7 days from today)
   const upcoming = shifts
-    .filter((s) => s.date >= todayStr)
+    .filter((s) => s.date >= todayStr && s.personId !== null)
     .sort((a, b) => a.date.localeCompare(b.date))
     .slice(0, 5);
 
