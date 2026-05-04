@@ -56,10 +56,9 @@ const Navbar: React.FC<NavbarProps> = ({ pageTitle = 'Nexus Management' }) => {
 
   useEffect(() => { setIsOpen(false); setProfileOpen(false); }, [pathname]);
 
-  const handleLogout = async () => {
+  const handleLogout = () => {
     sessionStorage.removeItem('nexus-me');
-    const res = await fetch('/api/logout', { method: 'POST' });
-    window.location.replace(res.url || '/login');
+    window.location.href = '/api/logout';
   };
 
   const initial = me?.name?.charAt(0).toUpperCase() ?? '?';
