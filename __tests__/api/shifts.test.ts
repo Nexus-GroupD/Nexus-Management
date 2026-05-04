@@ -17,6 +17,11 @@ jest.mock("../../lib/db", () => {
   return { __esModule: true, default: mockDb };
 });
 
+jest.mock("../../lib/auth", () => ({
+  requireAuth:    jest.fn().mockReturnValue(true),
+  hasPermission:  jest.fn().mockReturnValue(true),
+}));
+
 import { GET, POST, PATCH } from "../../app/api/shifts/route";
 import db from "../../lib/db";
 
@@ -42,7 +47,7 @@ describe("GET /api/shifts", () => {
 
     mockPrepare.mockReturnValue({ all: jest.fn().mockReturnValue(mockRows) });
 
-    const res = await GET();
+    const res = await GET({} as any);
     const data = await res.json();
 
     expect(res.status).toBe(200);
@@ -55,7 +60,7 @@ describe("GET /api/shifts", () => {
   it("returns 500 if database throws", async () => {
     mockPrepare.mockImplementation(() => { throw new Error("Database failure"); });
 
-    const res = await GET();
+    const res = await GET({} as any);
     const data = await res.json();
 
     expect(res.status).toBe(500);
