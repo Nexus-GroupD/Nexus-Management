@@ -1,7 +1,10 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
+
+// Client-only page for the messaging feature.
+// This component loads the current user, available employees, and conversations.
 
 type Message = {
   id: number;
@@ -35,12 +38,14 @@ export default function MessagesPage() {
   const [sending, setSending]               = useState(false);
 
   useEffect(() => {
+    // Load current user data once on mount.
     fetch("/api/me").then((r) => r.json()).then((d) => {
       if (d?.id) setMe(d);
     });
   }, []);
 
   useEffect(() => {
+    // Fetch list of employees that can be messaged.
     fetch("/api/people").then((r) => r.json()).then((d) => {
       if (Array.isArray(d)) setPeople(d);
     });
@@ -52,6 +57,7 @@ export default function MessagesPage() {
   }, [me]);
 
   const loadConversations = async () => {
+    // Get current user's conversations from the API.
     if (!me?.id) return;
     const res  = await fetch(`/api/conversations?employeeId=${me.id}`);
     const data = await res.json();
@@ -62,6 +68,7 @@ export default function MessagesPage() {
   };
 
   const handleCreateConversation = async () => {
+    // Start a new conversation with another employee.
     if (!newRecipientId || !me?.id || newRecipientId === me.id) return;
     const res  = await fetch("/api/conversations", {
       method: "POST",
@@ -75,6 +82,7 @@ export default function MessagesPage() {
   };
 
   const handleSend = async () => {
+    // Send a message in the currently selected conversation.
     const trimmed = newMessage.trim();
     if (!trimmed || !selectedConvId || !me?.id) return;
     if (trimmed.length > 500) { alert("Message cannot exceed 500 characters."); return; }

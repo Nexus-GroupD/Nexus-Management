@@ -4,31 +4,46 @@ import { NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAuth, hasPermission, getUserId } from "@/lib/auth";
 
+/**
+ * Returns a 403 Forbidden response
+ */
 function forbidden() {
   return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 }
 
+/**
+ * GET /api/conversations
+ * Retrieves all conversations for a given employee
+ * Query params: employeeId (required)
+ * Returns: Array of conversations with participants and messages
+ */
 export async function GET(req: Request) {
+  // Verify user is authenticated
   if (!requireAuth(req)) return forbidden();
 
+  // Extract employeeId from query parameters
   const { searchParams } = new URL(req.url);
   const employeeIdParam  = searchParams.get("employeeId");
 
+  // Validate employeeId parameter exists
   if (!employeeIdParam) {
     return NextResponse.json({ error: "employeeId is required" }, { status: 400 });
   }
 
+  // Convert and validate employeeId is a number
   const employeeId = Number(employeeIdParam);
   if (Number.isNaN(employeeId)) {
     return NextResponse.json({ error: "employeeId must be a number" }, { status: 400 });
   }
 
+  // Check permissions: user can only view their own conversations or has messages.view permission
   const currentUserId = getUserId(req);
   if (currentUserId !== employeeId && !hasPermission(req, "messages.view")) {
     return forbidden();
   }
 
   try {
+    // Fetch all conversations for the employee
     const convRows = db.prepare(`
       SELECT DISTINCT c.id, c.created_at, c.updated_at
       FROM conversations c
@@ -37,7 +52,9 @@ export async function GET(req: Request) {
       ORDER BY c.updated_at DESC
     `).all(employeeId) as { id: number; created_at: string; updated_at: string }[];
 
+    // Map conversations with participants and messages
     const conversations = convRows.map((conv) => {
+      // Fetch all participants in the conversation
       const participants = db.prepare(`
         SELECT cp.employee_id AS employeeId, p.id, p.name
         FROM conversation_participants cp
@@ -45,6 +62,7 @@ export async function GET(req: Request) {
         WHERE cp.conversation_id = ?
       `).all(conv.id) as { employeeId: number; id: number; name: string }[];
 
+      // Fetch all messages in the conversation
       const messages = db.prepare(`
         SELECT m.id, m.content, m.sender_id AS senderId, m.created_at AS createdAt,
                p.id AS "sender.id", p.name AS "sender.name"
