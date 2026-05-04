@@ -30,7 +30,7 @@ export async function GET(req: Request) {
   const formatted = people.map((p) => ({
     id: p.id,
     name: p.name,
-    email: hasPermission(req, "emails.view") ? p.email : undefined,
+    email: p.email,
     role: p.role,
     created_at: p.created_at,
     ...(showPay ? { pay_per_hour: p.pay_per_hour } : {}),
@@ -63,6 +63,11 @@ export async function PUT(req: Request) {
   if (!hasPermission(req, "people.edit")) return forbidden();
 
   const { id, name, email, role, pay_per_hour, availability, password } = await req.json();
+
+  const current = db.prepare("SELECT role FROM people WHERE id = ?").get(id) as { role: string } | undefined;
+  if (current && current.role !== role && !hasPermission(req, "roles.assign")) {
+    return forbidden();
+  }
 
   if (password !== undefined) {
     db.prepare(

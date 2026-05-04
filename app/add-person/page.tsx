@@ -413,7 +413,7 @@ export default function AddPersonPage() {
                           <span style={roleTagStyle}>{person.role}</span>
                           {person.teams.map((t) => <span key={t.id} style={teamTagStyle}>{t.name}</span>)}
                         </div>
-                        {can("emails.view") && person.email && (
+                        {person.email && (
                           <div style={{ color: "#64748b", fontSize: "0.82rem", marginTop: "0.2rem" }}>{person.email}</div>
                         )}
                         <div style={{ display: "flex", gap: "1rem", marginTop: "0.35rem", flexWrap: "wrap" }}>
