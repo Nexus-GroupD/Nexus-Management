@@ -65,6 +65,27 @@ function initDb(): Database.Database {
       end_time   TEXT NOT NULL,
       person_ID  INTEGER REFERENCES people(id) ON DELETE SET NULL
     );
+
+    CREATE TABLE IF NOT EXISTS conversations (
+      id         INTEGER PRIMARY KEY AUTOINCREMENT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
+
+    CREATE TABLE IF NOT EXISTS conversation_participants (
+      id              INTEGER PRIMARY KEY AUTOINCREMENT,
+      conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+      employee_id     INTEGER NOT NULL REFERENCES people(id)        ON DELETE CASCADE,
+      UNIQUE(conversation_id, employee_id)
+    );
+
+    CREATE TABLE IF NOT EXISTS messages (
+      id              INTEGER PRIMARY KEY AUTOINCREMENT,
+      conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+      sender_id       INTEGER NOT NULL REFERENCES people(id)        ON DELETE CASCADE,
+      content         TEXT    NOT NULL,
+      created_at      DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   // Migrate shifts table if it was created with old camelCase schema

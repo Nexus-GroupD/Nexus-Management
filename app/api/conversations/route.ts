@@ -4,30 +4,6 @@ import { NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
 
-// Ensure messaging tables exist
-db.exec(`
-  CREATE TABLE IF NOT EXISTS conversations (
-    id         INTEGER PRIMARY KEY AUTOINCREMENT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-
-  CREATE TABLE IF NOT EXISTS conversation_participants (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
-    employee_id     INTEGER NOT NULL REFERENCES people(id)        ON DELETE CASCADE,
-    UNIQUE(conversation_id, employee_id)
-  );
-
-  CREATE TABLE IF NOT EXISTS messages (
-    id              INTEGER PRIMARY KEY AUTOINCREMENT,
-    conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
-    sender_id       INTEGER NOT NULL REFERENCES people(id)        ON DELETE CASCADE,
-    content         TEXT    NOT NULL,
-    created_at      DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-`);
-
 function forbidden() {
   return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 }
