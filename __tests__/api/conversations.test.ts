@@ -76,24 +76,26 @@ describe("GET /api/conversations", () => {
   });
 
   it("returns conversations for a valid employeeId", async () => {
-    // First prepare call = conversations query, rest = participants + messages per conv
+    // Each prepare() call gets its own mock so the call order is reliable
+    const allMock = jest.fn()
+      .mockReturnValueOnce([{ id: 1, created_at: "2026-01-01", updated_at: "2026-01-01" }]) // conversations
+      .mockReturnValueOnce([                                                                   // participants
+        { employeeId: 1, id: 1, name: "Alex Rivera" },
+        { employeeId: 2, id: 2, name: "Jordan Lee" },
+      ])
+      .mockReturnValueOnce([                                                                   // messages
+        {
+          id: 1,
+          content: "Hi Jordan!",
+          senderId: 1,
+          createdAt: "2026-01-01T10:00:00Z",
+          "sender.id": 1,
+          "sender.name": "Alex Rivera",
+        },
+      ]);
+
     mockPrepare.mockImplementation(() => ({
-      all: jest.fn()
-        .mockReturnValueOnce([{ id: 1, created_at: "2026-01-01", updated_at: "2026-01-01" }])
-        .mockReturnValueOnce([
-          { employeeId: 1, id: 1, name: "Alex Rivera" },
-          { employeeId: 2, id: 2, name: "Jordan Lee" },
-        ])
-        .mockReturnValueOnce([
-          {
-            id: 1,
-            content: "Hi Jordan!",
-            senderId: 1,
-            createdAt: "2026-01-01T10:00:00Z",
-            "sender.id": 1,
-            "sender.name": "Alex Rivera",
-          },
-        ]),
+      all: allMock,
       get: jest.fn(),
       run: jest.fn(),
     }));
