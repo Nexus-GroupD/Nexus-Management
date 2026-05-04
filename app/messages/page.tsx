@@ -3,30 +3,17 @@
 import { useEffect, useState } from "react";
 import Navbar from "@/components/Navbar";
 
-const DEMO_EMPLOYEES = [
-  { id: 1, name: "Alex Rivera", role: "Manager" },
-  { id: 2, name: "Jordan Lee", role: "Employee" },
-  { id: 3, name: "Sam Patel", role: "Employee" },
-  { id: 4, name: "Casey Morgan", role: "Employee" },
-];
-
 type Message = {
   id: number;
   content: string;
   senderId: number;
   createdAt: string;
-  sender: {
-    id: number;
-    name: string;
-  };
+  sender: { id: number; name: string };
 };
 
 type Participant = {
   employeeId: number;
-  employee: {
-    id: number;
-    name: string;
-  };
+  employee: { id: number; name: string };
 };
 
 type Conversation = {
@@ -35,394 +22,257 @@ type Conversation = {
   messages: Message[];
 };
 
+type Person = { id: number; name: string; role: string };
+type Me = { id: number; name: string; role: string };
+
 export default function MessagesPage() {
-  const [selectedId, setSelectedId] = useState<number>(1);
-  const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [selectedConversationId, setSelectedConversationId] = useState<
-    number | null
-  >(null);
-  const [newMessage, setNewMessage] = useState("");
-  const [newConversationEmployeeId, setNewConversationEmployeeId] =
-    useState<number>(2);
+  const [me, setMe]                         = useState<Me | null>(null);
+  const [people, setPeople]                 = useState<Person[]>([]);
+  const [conversations, setConversations]   = useState<Conversation[]>([]);
+  const [selectedConvId, setSelectedConvId] = useState<number | null>(null);
+  const [newMessage, setNewMessage]         = useState("");
+  const [newRecipientId, setNewRecipientId] = useState<number | null>(null);
+  const [sending, setSending]               = useState(false);
 
   useEffect(() => {
-    async function loadConversations() {
-      const res = await fetch(`/api/conversations?employeeId=${selectedId}`);
-      const data = await res.json();
-      setConversations(data);
-      if (data.length > 0 && !selectedConversationId) {
-        setSelectedConversationId(data[0].id);
-      }
-    }
-
-    loadConversations();
-  }, [selectedId]);
-  async function handleCreateConversation() {
-    if (!newConversationEmployeeId || newConversationEmployeeId === selectedId)
-      return;
-
-    const res = await fetch("/api/conversations", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        employeeId: selectedId,
-        otherEmployeeId: newConversationEmployeeId,
-      }),
+    fetch("/api/me").then((r) => r.json()).then((d) => {
+      if (d?.id) setMe(d);
     });
+  }, []);
 
-    const newConversation = await res.json();
+  useEffect(() => {
+    fetch("/api/people").then((r) => r.json()).then((d) => {
+      if (Array.isArray(d)) setPeople(d);
+    });
+  }, []);
 
-    const updatedRes = await fetch(
-      `/api/conversations?employeeId=${selectedId}`,
-    );
-    const updatedData = await updatedRes.json();
+  useEffect(() => {
+    if (!me?.id) return;
+    loadConversations();
+  }, [me]);
 
-    setConversations(updatedData);
-    setSelectedConversationId(newConversation.id);
-  }
-  // Handles sending a message from the UI to the backend API.
-  // Includes client-side validation to improve user experience and reduce invalid requests.
-  // Note: Security is still enforced on the server (never trust client input alone).
-async function handleSend() {
-  const trimmedMessage = newMessage.trim();
+  const loadConversations = async () => {
+    if (!me?.id) return;
+    const res  = await fetch(`/api/conversations?employeeId=${me.id}`);
+    const data = await res.json();
+    if (Array.isArray(data)) {
+      setConversations(data);
+      if (data.length > 0 && !selectedConvId) setSelectedConvId(data[0].id);
+    }
+  };
 
-  // Prevent sending empty messages
-  // Improves UX and avoids unnecessary API calls
-  if (!trimmedMessage || !selectedConversationId) return;
+  const handleCreateConversation = async () => {
+    if (!newRecipientId || !me?.id || newRecipientId === me.id) return;
+    const res  = await fetch("/api/conversations", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ employeeId: me.id, otherEmployeeId: newRecipientId }),
+    });
+    const conv = await res.json();
+    await loadConversations();
+    setSelectedConvId(conv.id);
+    setNewRecipientId(null);
+  };
 
-  // Enforce message length limit on client side
-  // Helps prevent large payloads before reaching the server
-  if (trimmedMessage.length > 500) {
-    alert("Message cannot exceed 500 characters.");
-    return;
-  }
+  const handleSend = async () => {
+    const trimmed = newMessage.trim();
+    if (!trimmed || !selectedConvId || !me?.id) return;
+    if (trimmed.length > 500) { alert("Message cannot exceed 500 characters."); return; }
+    setSending(true);
+    await fetch("/api/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ conversationId: selectedConvId, senderId: me.id, content: trimmed }),
+    });
+    setNewMessage("");
+    await loadConversations();
+    setSending(false);
+  };
 
-  // Send validated message to backend API
-  await fetch("/api/messages", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+  const selectedConv = conversations.find((c) => c.id === selectedConvId);
+  const others = people.filter((p) => p.id !== me?.id);
 
-    // JSON encoding ensures structured and safe data transmission
-    body: JSON.stringify({
-      conversationId: selectedConversationId,
-      senderId: selectedId,
-      content: trimmedMessage,
-    }),
-  });
-
-  // Clear input after sending
-  setNewMessage("");
-
-  // Refresh conversations to display updated messages
-  const res = await fetch(`/api/conversations?employeeId=${selectedId}`);
-  const data = await res.json();
-  setConversations(data);
-}
-
-  const selectedConversation = conversations.find(
-    (c) => c.id === selectedConversationId,
+  if (!me) return (
+    <>
+      <Navbar pageTitle="Messages" />
+      <div style={pageStyle}><p style={{ color: "#64748b" }}>Loading…</p></div>
+    </>
   );
 
   return (
     <>
       <Navbar pageTitle="Messages" />
-      <main className="messages-page">
-        <div className="messages-selector">
-          <label className="selector-label">Viewing as:</label>
-          <div className="selector-pills">
-            {DEMO_EMPLOYEES.map((emp) => (
-              <button
-                key={emp.id}
-                className={`selector-pill ${selectedId === emp.id ? "active" : ""}`}
-                onClick={() => {
-                  setSelectedId(emp.id);
-                  setSelectedConversationId(null);
-                }}
-              >
-                {emp.name}
-              </button>
+      <main style={pageStyle}>
+
+        <div style={newConvBar}>
+          <span style={labelStyle}>New conversation with:</span>
+          <select
+            style={selectStyle}
+            value={newRecipientId ?? ""}
+            onChange={(e) => setNewRecipientId(Number(e.target.value) || null)}
+          >
+            <option value="">Select person…</option>
+            {others.map((p) => (
+              <option key={p.id} value={p.id}>{p.name} — {p.role}</option>
             ))}
-          </div>
+          </select>
+          <button style={greenBtn} onClick={handleCreateConversation} disabled={!newRecipientId}>
+            Start
+          </button>
         </div>
 
-        <div className="messages-grid">
-          <aside className="messages-sidebar">
-            <h2>
-              Conversations{" "}
-              {conversations.length > 0 && `(${conversations.length})`}
+        <div style={gridStyle}>
+          <aside style={sidebarStyle}>
+            <h2 style={sidebarTitle}>
+              Conversations
+              {conversations.length > 0 && <span style={countBadge}>{conversations.length}</span>}
             </h2>
-            <div className="new-conversation">
-              <select
-                value={newConversationEmployeeId}
-                onChange={(e) =>
-                  setNewConversationEmployeeId(Number(e.target.value))
-                }
-              >
-                {DEMO_EMPLOYEES.filter((emp) => emp.id !== selectedId).map(
-                  (emp) => (
-                    <option key={emp.id} value={emp.id}>
-                      {emp.name}
-                    </option>
-                  ),
-                )}
-              </select>
-
-              <button onClick={handleCreateConversation}>New</button>
-            </div>
-            {conversations.length === 0 ? (
-              <p>No conversations yet.</p>
-            ) : (
-              conversations.map((conversation) => {
-                const otherNames = conversation.participants
-                  .filter((p) => p.employeeId !== selectedId)
-                  .map((p) => p.employee.name)
-                  .join(", ");
-
-                const lastMessage =
-                  conversation.messages[conversation.messages.length - 1];
-
-                return (
-                  <div
-                    key={conversation.id}
-                    className="conversation-card"
-                    onClick={() => setSelectedConversationId(conversation.id)}
-                  >
-                    <strong>{otherNames || "Conversation"}</strong>
-                    <p>{lastMessage?.content ?? "No messages yet"}</p>
-                  </div>
-                );
-              })
-            )}
+            {conversations.length === 0
+              ? <p style={{ color: "#94a3b8", fontSize: "0.875rem" }}>No conversations yet.</p>
+              : conversations.map((conv) => {
+                  const otherNames = conv.participants
+                    .filter((p) => p.employeeId !== me.id)
+                    .map((p) => p.employee.name)
+                    .join(", ");
+                  const last = conv.messages[conv.messages.length - 1];
+                  const isActive = conv.id === selectedConvId;
+                  return (
+                    <div key={conv.id} style={convCard(isActive)} onClick={() => setSelectedConvId(conv.id)}>
+                      <div style={convName}>{otherNames || "Conversation"}</div>
+                      <div style={convPreview}>{last?.content ?? "No messages yet"}</div>
+                    </div>
+                  );
+                })
+            }
           </aside>
 
-          <section className="messages-panel">
-            {!selectedConversation ? (
-              <p>Select a conversation.</p>
-            ) : (
-              <>
-                <h2>
-                  {selectedConversation.participants
-                    .filter((p) => p.employeeId !== selectedId)
-                    .map((p) => p.employee.name)
-                    .join(", ")}
-                </h2>
-
-                <div className="message-list">
-                  {selectedConversation.messages.map((message) => {
-                    const mine = message.senderId === selectedId;
-
-                    return (
-                      <div
-                        key={message.id}
-                        className={`message-bubble ${mine ? "mine" : "theirs"}`}
-                      >
-                        <div className="message-sender">
-                          {message.sender.name}
-                        </div>
-                        <div>{message.content}</div>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="message-input">
-                  <input
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") {
-                        e.preventDefault();
-                        handleSend();
-                      }
-                    }}
-                    placeholder="Type a message..."
-                  />
-                  <button onClick={handleSend}>Send</button>
-                </div>
-              </>
-            )}
+          <section style={panelStyle}>
+            {!selectedConv
+              ? <p style={{ color: "#94a3b8" }}>Select a conversation to start chatting.</p>
+              : <>
+                  <h2 style={panelTitle}>
+                    {selectedConv.participants
+                      .filter((p) => p.employeeId !== me.id)
+                      .map((p) => p.employee.name)
+                      .join(", ")}
+                  </h2>
+                  <div style={messageList}>
+                    {selectedConv.messages.length === 0
+                      ? <p style={{ color: "#94a3b8", fontSize: "0.875rem" }}>No messages yet. Say hi!</p>
+                      : selectedConv.messages.map((msg) => {
+                          const mine = msg.senderId === me.id;
+                          return (
+                            <div key={msg.id} style={bubbleWrapper(mine)}>
+                              <div style={bubble(mine)}>
+                                <div style={senderLabel}>{msg.sender.name}</div>
+                                <div>{msg.content}</div>
+                              </div>
+                            </div>
+                          );
+                        })
+                    }
+                  </div>
+                  <div style={inputRow}>
+                    <input
+                      style={inputStyle}
+                      value={newMessage}
+                      onChange={(e) => setNewMessage(e.target.value)}
+                      onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); } }}
+                      placeholder="Type a message…"
+                      maxLength={500}
+                    />
+                    <button style={greenBtn} onClick={handleSend} disabled={sending || !newMessage.trim()}>
+                      {sending ? "…" : "Send"}
+                    </button>
+                  </div>
+                </>
+            }
           </section>
         </div>
       </main>
-
-      <style>{`
-        .new-conversation {
-          display: flex;
-          gap: 0.5rem;
-          margin-bottom: 1rem;
-        }
-
-        .new-conversation select {
-          flex: 1;
-          padding: 0.5rem;
-          border-radius: 8px;
-          border: none;
-        }
-
-        .new-conversation button {
-          background: #48bb78;
-          color: white;
-          border: none;
-          padding: 0.5rem 0.75rem;
-          border-radius: 8px;
-          cursor: pointer;
-        }
-
-        .message-input {
-          display: flex;
-          gap: 0.5rem;
-          margin-top: 1rem;
-        }
-
-        .message-input input {
-          flex: 1;
-          padding: 0.5rem;
-          border-radius: 8px;
-          border: none;
-        }
-
-        .message-input button {
-          background: #48bb78;
-          color: white;
-          border: none;
-          padding: 0.5rem 1rem;
-          border-radius: 8px;
-          cursor: pointer;
-        }
-
-        .messages-page {
-          max-width: 1100px;
-          margin: 0 auto;
-          padding: 6rem 1.5rem 3rem;
-          display: flex;
-          flex-direction: column;
-          gap: 1.5rem;
-        }
-
-        .messages-selector {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          flex-wrap: wrap;
-        }
-
-        .selector-label {
-          font-size: 0.8rem;
-          color: #718096;
-          font-weight: 600;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-
-        .selector-pills {
-          display: flex;
-          gap: 0.5rem;
-          flex-wrap: wrap;
-        }
-
-        .selector-pill {
-          background: #1a1f2e;
-          border: 1px solid rgba(255,255,255,0.08);
-          color: #a0aec0;
-          padding: 0.35rem 0.85rem;
-          border-radius: 999px;
-          font-size: 0.8rem;
-          font-weight: 500;
-          cursor: pointer;
-        }
-
-        .selector-pill.active,
-        .selector-pill:hover {
-          background: rgba(72,187,120,0.12);
-          border-color: rgba(72,187,120,0.3);
-          color: #48bb78;
-        }
-
-        .messages-grid {
-          display: grid;
-          grid-template-columns: 320px 1fr;
-          gap: 1.5rem;
-        }
-
-        .messages-sidebar,
-        .messages-panel {
-          background: #1a202c;
-          padding: 1rem;
-          border-radius: 12px;
-        }
-
-        .messages-sidebar h2,
-        .messages-panel h2 {
-          margin-bottom: 1rem;
-          color: #f7fafc;
-        }
-          
-        .messages-sidebar p,
-        .messages-panel p {
-        color: #e2e8f0;
-        }
-
-        .conversation-card {
-          padding: 0.75rem;
-          border-radius: 10px;
-          margin-bottom: 0.5rem;
-          cursor: pointer;
-          transition: background 0.2s;
-        }
-
-        .conversation-card:hover {
-          background: rgba(255, 255, 255, 0.05);
-        }
-
-        .conversation-card strong {
-          display: block;
-          color: #f8fafc; /* name */
-        }
-
-        .conversation-card p {
-          margin: 0;
-          color: #cbd5e1; /* preview text */
-        }
-
-        /* Messages */
-        .message-list {
-          display: flex;
-          flex-direction: column;
-          gap: 0.75rem;
-        }
-
-        .message-bubble {
-          max-width: 70%;
-          padding: 0.75rem 1rem;
-          border-radius: 12px;
-          color: #f8fafc;
-        }
-
-        .message-bubble.mine {
-          align-self: flex-end;
-          background: rgba(72, 187, 120, 0.18);
-        }
-
-        .message-bubble.theirs {
-          align-self: flex-start;
-          background: rgba(255, 255, 255, 0.08);
-        }
-
-        .message-sender {
-          font-size: 0.75rem;
-          color: #a0aec0;
-          margin-bottom: 0.25rem;
-        }
-
-        @media (max-width: 700px) {
-          .messages-grid {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
     </>
   );
 }
+
+const pageStyle: React.CSSProperties = {
+  maxWidth: "1100px", margin: "0 auto", padding: "6rem 1.5rem 3rem",
+  display: "flex", flexDirection: "column", gap: "1.25rem",
+};
+const newConvBar: React.CSSProperties = {
+  display: "flex", alignItems: "center", gap: "0.75rem", flexWrap: "wrap",
+  background: "white", borderRadius: "12px", padding: "0.875rem 1.25rem",
+  boxShadow: "0 1px 4px rgba(0,0,0,0.06)", border: "1px solid #f1f5f9",
+};
+const labelStyle: React.CSSProperties = {
+  fontSize: "0.8rem", fontWeight: 600, color: "#64748b",
+  textTransform: "uppercase", letterSpacing: "0.05em", whiteSpace: "nowrap",
+};
+const selectStyle: React.CSSProperties = {
+  flex: 1, minWidth: "180px", padding: "0.5rem 0.75rem",
+  border: "1.5px solid #e2e8f0", borderRadius: "8px", fontSize: "0.875rem",
+  color: "#0f172a", background: "#f8fafc",
+};
+const greenBtn: React.CSSProperties = {
+  background: "#10b981", color: "white", border: "none",
+  padding: "0.55rem 1.1rem", borderRadius: "8px", fontSize: "0.875rem",
+  fontWeight: 600, cursor: "pointer", whiteSpace: "nowrap",
+};
+const gridStyle: React.CSSProperties = {
+  display: "grid", gridTemplateColumns: "300px 1fr", gap: "1.25rem",
+};
+const sidebarStyle: React.CSSProperties = {
+  background: "white", borderRadius: "16px", padding: "1.25rem",
+  boxShadow: "0 1px 4px rgba(0,0,0,0.06)", border: "1px solid #f1f5f9",
+  display: "flex", flexDirection: "column", gap: "0.5rem",
+};
+const sidebarTitle: React.CSSProperties = {
+  fontSize: "0.9rem", fontWeight: 700, color: "#0f172a",
+  display: "flex", alignItems: "center", gap: "0.5rem", margin: "0 0 0.5rem",
+};
+const countBadge: React.CSSProperties = {
+  background: "#eff6ff", color: "#3b82f6", borderRadius: "999px",
+  padding: "0.1rem 0.5rem", fontSize: "0.72rem", fontWeight: 600,
+};
+const convCard = (active: boolean): React.CSSProperties => ({
+  padding: "0.75rem", borderRadius: "10px", cursor: "pointer",
+  background: active ? "#f0fdf4" : "transparent",
+  border: active ? "1.5px solid #bbf7d0" : "1.5px solid transparent",
+  transition: "all 0.15s",
+});
+const convName: React.CSSProperties = {
+  fontWeight: 600, fontSize: "0.875rem", color: "#0f172a", marginBottom: "0.2rem",
+};
+const convPreview: React.CSSProperties = {
+  fontSize: "0.78rem", color: "#64748b",
+  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+};
+const panelStyle: React.CSSProperties = {
+  background: "white", borderRadius: "16px", padding: "1.5rem",
+  boxShadow: "0 1px 4px rgba(0,0,0,0.06)", border: "1px solid #f1f5f9",
+  display: "flex", flexDirection: "column", gap: "1rem",
+};
+const panelTitle: React.CSSProperties = {
+  fontSize: "1rem", fontWeight: 700, color: "#0f172a", margin: 0,
+};
+const messageList: React.CSSProperties = {
+  flex: 1, display: "flex", flexDirection: "column", gap: "0.75rem",
+  maxHeight: "420px", overflowY: "auto", padding: "0.5rem 0",
+};
+const bubbleWrapper = (mine: boolean): React.CSSProperties => ({
+  display: "flex", justifyContent: mine ? "flex-end" : "flex-start",
+});
+const bubble = (mine: boolean): React.CSSProperties => ({
+  maxWidth: "65%", padding: "0.65rem 1rem", borderRadius: "14px",
+  background: mine ? "#dcfce7" : "#f1f5f9", color: "#0f172a",
+});
+const senderLabel: React.CSSProperties = {
+  fontSize: "0.72rem", color: "#64748b", marginBottom: "0.25rem", fontWeight: 500,
+};
+const inputRow: React.CSSProperties = {
+  display: "flex", gap: "0.75rem", marginTop: "auto",
+};
+const inputStyle: React.CSSProperties = {
+  flex: 1, padding: "0.65rem 0.875rem",
+  border: "1.5px solid #e2e8f0", borderRadius: "10px",
+  fontSize: "0.9rem", color: "#0f172a", background: "#f8fafc",
+};
