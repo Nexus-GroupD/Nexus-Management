@@ -9,16 +9,16 @@ interface NavbarProps {
   pageTitle?: string;
 }
 
-type Me = { id: number; name: string; email: string; dbRole: string; role: string } | null;
+type Me = { id: number; name: string; email: string; dbRole: string; role: string; permissions: string[] } | null;
 
 const NAV_LINKS = [
-  { href: '/',           label: 'Home',      icon: '⌂',  adminOnly: false },
-  { href: '/schedule',   label: 'Schedule',  icon: '📅', adminOnly: false },
-  { href: '/dashboard',  label: 'Dashboard', icon: '◈',  adminOnly: false },
-  { href: '/history',    label: 'History',   icon: '⏱', adminOnly: false },
-  { href: '/messages',   label: 'Messages',  icon: '✉',  adminOnly: false },
-  { href: '/add-person', label: 'People',    icon: '👥', adminOnly: false },
-  { href: '/roles',      label: 'Roles',     icon: '🏷',  adminOnly: true  },
+  { href: '/',           label: 'Home',      icon: '⌂',  permission: null         },
+  { href: '/schedule',   label: 'Schedule',  icon: '📅', permission: 'schedule.view' },
+  { href: '/dashboard',  label: 'Dashboard', icon: '◈',  permission: null         },
+  { href: '/history',    label: 'History',   icon: '⏱', permission: null         },
+  { href: '/messages',   label: 'Messages',  icon: '✉',  permission: null         },
+  { href: '/add-person', label: 'People',    icon: '👥', permission: 'people.view'   },
+  { href: '/roles',      label: 'Roles',     icon: '🏷',  permission: 'roles.view'    },
 ];
 
 const Navbar: React.FC<NavbarProps> = ({ pageTitle = 'Nexus Management' }) => {
@@ -75,7 +75,7 @@ const Navbar: React.FC<NavbarProps> = ({ pageTitle = 'Nexus Management' }) => {
 
         {isOpen && (
           <div className="dropdown-menu" role="menu">
-            {NAV_LINKS.filter(({ adminOnly }) => !adminOnly || me?.role === 'admin').map(({ href, label, icon }) => (
+            {NAV_LINKS.filter(({ permission }) => !permission || me?.permissions?.includes(permission)).map(({ href, label, icon }) => (
               <Link
                 key={href}
                 href={href}
