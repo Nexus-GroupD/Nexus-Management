@@ -5,7 +5,7 @@ export const ALL_PERMISSION_KEYS = [
   "availability.view", "availability.edit", "availability.override",
   "accounts.create_login", "accounts.set_password", "accounts.reset_password",
   "accounts.force_password_reset", "accounts.enable_disable",
-  "emails.view", "emails.edit",
+  "messages.view", "messages.send",
   "roles.view", "roles.create", "roles.edit", "roles.delete", "roles.assign",
   "data.view_sensitive", "data.export", "data.import",
   "audit.view", "audit.edit",
@@ -67,10 +67,10 @@ export const PERMISSION_GROUPS: ReadonlyArray<{
     ],
   },
   {
-    label: "Emails",
+    label: "Messages",
     perms: [
-      { key: "emails.view", label: "View emails" },
-      { key: "emails.edit", label: "Edit emails" },
+      { key: "messages.view", label: "View messages" },
+      { key: "messages.send", label: "Send messages" },
     ],
   },
   {
@@ -138,7 +138,7 @@ export const TEAM_LEAD_PERMISSIONS: Permission[] = [
   "schedule.view", "schedule.edit", "schedule.assign_shifts",
   "availability.view", "availability.edit", "availability.override",
   "accounts.create_login", "accounts.set_password",
-  "emails.view",
+  "messages.view", "messages.send",
   "roles.view",
   "teams.view", "teams.edit",
   "time_off.approve",
@@ -148,5 +148,5 @@ export const EMPLOYEE_PERMISSIONS: Permission[] = [
   "people.view",
   "schedule.view",
   "availability.view",
-  "emails.view",
+  "messages.view",
 ];

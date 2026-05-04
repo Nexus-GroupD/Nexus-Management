@@ -2,7 +2,7 @@ export const runtime = "nodejs";
 
 import { NextResponse } from "next/server";
 import db from "@/lib/db";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, hasPermission, getUserId } from "@/lib/auth";
 
 function forbidden() {
   return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -21,6 +21,11 @@ export async function GET(req: Request) {
   const employeeId = Number(employeeIdParam);
   if (Number.isNaN(employeeId)) {
     return NextResponse.json({ error: "employeeId must be a number" }, { status: 400 });
+  }
+
+  const currentUserId = getUserId(req);
+  if (currentUserId !== employeeId && !hasPermission(req, "messages.view")) {
+    return forbidden();
   }
 
   try {
