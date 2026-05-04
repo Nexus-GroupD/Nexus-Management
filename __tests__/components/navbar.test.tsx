@@ -1,13 +1,10 @@
 /// <reference types="jest" />
-//unit test for the Navbar component to verify that it renders correctly, 
-//opens and closes the menu, and highlights the active route. The test was successfully executed 
-//using Jest and React Testing Library. While some unrelated test files had existing configuration issues, 
-//the Navbar test ran successfully and validated the intended functionality
+// Unit tests for the Navbar component
 
 import { render, screen, fireEvent } from "@testing-library/react";
 import Navbar from "../../components/Navbar";
 
-// Mock next/link so it behaves like a normal anchor in tests
+// Mock next/link
 jest.mock("next/link", () => {
   return ({ href, children, className }: any) => (
     <a href={href} className={className}>
@@ -16,7 +13,7 @@ jest.mock("next/link", () => {
   );
 });
 
-// Mock usePathname and useRouter from next/navigation
+// Mock next/navigation
 const mockUsePathname = jest.fn();
 const mockPush = jest.fn();
 
@@ -25,21 +22,24 @@ jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush, replace: jest.fn() }),
 }));
 
-describe("Navbar", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockUsePathname.mockReturnValue("/");
-  });
+// Mock global fetch so /api/me never hangs or errors in tests
+beforeEach(() => {
+  jest.clearAllMocks();
+  mockUsePathname.mockReturnValue("/");
+  global.fetch = jest.fn().mockResolvedValue({
+    ok: false,
+    json: async () => null,
+  }) as any;
+});
 
+describe("Navbar", () => {
   it("renders the page title", () => {
     render(<Navbar pageTitle="Dashboard" />);
-
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
   });
 
   it("does not show menu items before opening the menu", () => {
     render(<Navbar pageTitle="Home" />);
-
     expect(screen.queryByText("Schedule")).not.toBeInTheDocument();
     expect(screen.queryByText("Dashboard")).not.toBeInTheDocument();
   });
@@ -60,22 +60,22 @@ describe("Navbar", () => {
     expect(screen.getByText("People")).toBeInTheDocument();
   });
 
- it("renders the active link based on pathname", () => {
-  mockUsePathname.mockReturnValue("/dashboard");
+  it("renders the active link based on pathname", () => {
+    mockUsePathname.mockReturnValue("/dashboard");
 
-  render(<Navbar pageTitle="Dashboard" />);
+    render(<Navbar pageTitle="Dashboard" />);
 
-  const button = screen.getByRole("button", {
-    name: /toggle navigation menu/i,
+    const button = screen.getByRole("button", {
+      name: /toggle navigation menu/i,
+    });
+
+    fireEvent.click(button);
+
+    const dashboardLinks = screen.getAllByText("Dashboard");
+    const dashboardLink = dashboardLinks[1].closest("a");
+
+    expect(dashboardLink).toHaveClass("active");
   });
-
-  fireEvent.click(button);
-
-  const dashboardLinks = screen.getAllByText("Dashboard");
-  const dashboardLink = dashboardLinks[1].closest("a");
-
-  expect(dashboardLink).toHaveClass("active");
-});
 
   it("closes the menu when clicking outside", () => {
     render(<Navbar pageTitle="Home" />);
@@ -85,11 +85,9 @@ describe("Navbar", () => {
     });
 
     fireEvent.click(button);
-
     expect(screen.getByText("Schedule")).toBeInTheDocument();
 
     fireEvent.mouseDown(document);
-
     expect(screen.queryByText("Schedule")).not.toBeInTheDocument();
   });
 
@@ -101,7 +99,6 @@ describe("Navbar", () => {
     });
 
     fireEvent.click(button);
-
     expect(screen.getByText("Schedule")).toBeInTheDocument();
 
     mockUsePathname.mockReturnValue("/history");
@@ -112,7 +109,6 @@ describe("Navbar", () => {
 
   it("uses the default title when no pageTitle is provided", () => {
     render(<Navbar />);
-
     expect(screen.getByText("Nexus Management")).toBeInTheDocument();
   });
 });
