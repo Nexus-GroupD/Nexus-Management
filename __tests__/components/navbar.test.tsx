@@ -4,7 +4,6 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import Navbar from "../../components/Navbar";
 
-// Mock next/link
 jest.mock("next/link", () => {
   return ({ href, children, className }: any) => (
     <a href={href} className={className}>
@@ -13,7 +12,6 @@ jest.mock("next/link", () => {
   );
 });
 
-// Mock next/navigation
 const mockUsePathname = jest.fn();
 const mockPush = jest.fn();
 
@@ -22,13 +20,19 @@ jest.mock("next/navigation", () => ({
   useRouter: () => ({ push: mockPush, replace: jest.fn() }),
 }));
 
-// Mock global fetch so /api/me never hangs or errors in tests
+// Mock fetch so /api/me returns a logged-in admin user — ensures all nav links render
 beforeEach(() => {
   jest.clearAllMocks();
   mockUsePathname.mockReturnValue("/");
   global.fetch = jest.fn().mockResolvedValue({
-    ok: false,
-    json: async () => null,
+    ok: true,
+    json: async () => ({
+      id: 1,
+      name: "Test User",
+      email: "test@test.com",
+      dbRole: "Manager",
+      role: "admin",
+    }),
   }) as any;
 });
 
@@ -44,7 +48,7 @@ describe("Navbar", () => {
     expect(screen.queryByText("Dashboard")).not.toBeInTheDocument();
   });
 
-  it("opens the menu when the hamburger button is clicked", () => {
+  it("opens the menu when the hamburger button is clicked", async () => {
     render(<Navbar pageTitle="Home" />);
 
     const button = screen.getByRole("button", {
@@ -53,6 +57,9 @@ describe("Navbar", () => {
 
     fireEvent.click(button);
 
+    // Wait for fetch/state to settle
+    await new Promise((r) => setTimeout(r, 0));
+
     expect(screen.getByText("Schedule")).toBeInTheDocument();
     expect(screen.getByText("Dashboard")).toBeInTheDocument();
     expect(screen.getByText("History")).toBeInTheDocument();
@@ -60,7 +67,7 @@ describe("Navbar", () => {
     expect(screen.getByText("People")).toBeInTheDocument();
   });
 
-  it("renders the active link based on pathname", () => {
+  it("renders the active link based on pathname", async () => {
     mockUsePathname.mockReturnValue("/dashboard");
 
     render(<Navbar pageTitle="Dashboard" />);
@@ -70,6 +77,7 @@ describe("Navbar", () => {
     });
 
     fireEvent.click(button);
+    await new Promise((r) => setTimeout(r, 0));
 
     const dashboardLinks = screen.getAllByText("Dashboard");
     const dashboardLink = dashboardLinks[1].closest("a");
@@ -77,7 +85,7 @@ describe("Navbar", () => {
     expect(dashboardLink).toHaveClass("active");
   });
 
-  it("closes the menu when clicking outside", () => {
+  it("closes the menu when clicking outside", async () => {
     render(<Navbar pageTitle="Home" />);
 
     const button = screen.getByRole("button", {
@@ -85,13 +93,15 @@ describe("Navbar", () => {
     });
 
     fireEvent.click(button);
+    await new Promise((r) => setTimeout(r, 0));
+
     expect(screen.getByText("Schedule")).toBeInTheDocument();
 
     fireEvent.mouseDown(document);
     expect(screen.queryByText("Schedule")).not.toBeInTheDocument();
   });
 
-  it("closes the menu when the route changes", () => {
+  it("closes the menu when the route changes", async () => {
     const { rerender } = render(<Navbar pageTitle="Home" />);
 
     const button = screen.getByRole("button", {
@@ -99,6 +109,8 @@ describe("Navbar", () => {
     });
 
     fireEvent.click(button);
+    await new Promise((r) => setTimeout(r, 0));
+
     expect(screen.getByText("Schedule")).toBeInTheDocument();
 
     mockUsePathname.mockReturnValue("/history");
