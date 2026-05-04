@@ -1,19 +1,41 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import HistoryTable from '@/components/historyTable';
 
-const DEMO_EMPLOYEES = [
-  { id: 0,  name: 'All Employees' },
-  { id: 1,  name: 'Alex Rivera' },
-  { id: 2,  name: 'Jordan Lee' },
-  { id: 3,  name: 'Sam Patel' },
-  { id: 4,  name: 'Casey Morgan' },
-];
+interface Employee {
+  id: number;
+  name: string;
+}
 
 export default function History() {
   const [selectedId, setSelectedId] = useState<number>(0);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loadingEmployees, setLoadingEmployees] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/people')
+      .then(r => r.json())
+      .then((data: Employee[]) => {
+        if (Array.isArray(data)) {
+          setEmployees(data);
+        }
+      })
+      .catch(() => {
+        // If people can't be loaded, the filter will just show "All Employees"
+        console.error('Failed to load employee list.');
+      })
+      .finally(() => setLoadingEmployees(false));
+  }, []);
+
+  // Validate that selectedId is 0 (all) or a real employee ID from the fetched list
+  const handleSelect = (value: string) => {
+    const parsed = parseInt(value, 10);
+    if (!Number.isFinite(parsed) || parsed < 0) return;
+    if (parsed !== 0 && !employees.some(e => e.id === parsed)) return;
+    setSelectedId(parsed);
+  };
 
   return (
     <>
@@ -29,9 +51,11 @@ export default function History() {
           <select
             className="filter-select"
             value={selectedId}
-            onChange={e => setSelectedId(Number(e.target.value))}
+            onChange={e => handleSelect(e.target.value)}
+            disabled={loadingEmployees}
           >
-            {DEMO_EMPLOYEES.map(e => (
+            <option value={0}>All Employees</option>
+            {employees.map(e => (
               <option key={e.id} value={e.id}>{e.name}</option>
             ))}
           </select>
@@ -41,6 +65,7 @@ export default function History() {
           <HistoryTable
             personId={selectedId === 0 ? undefined : selectedId}
             limit={50}
+            employeeNames={Object.fromEntries(employees.map(e => [e.id, e.name]))}
           />
         </div>
       </main>
@@ -71,6 +96,7 @@ export default function History() {
           transition: border-color 0.15s;
         }
         .filter-select:focus { border-color: #48bb78; }
+        .filter-select:disabled { opacity: 0.5; cursor: not-allowed; }
         .hist-table-card {
           background: #1a1f2e;
           border: 1px solid rgba(255,255,255,0.06);
@@ -82,4 +108,3 @@ export default function History() {
     </>
   );
 }
-
