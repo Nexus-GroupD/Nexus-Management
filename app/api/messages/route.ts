@@ -4,6 +4,24 @@ import { NextResponse } from "next/server";
 import db from "@/lib/db";
 import { requireAuth } from "@/lib/auth";
 
+function validateMessageContent(content: unknown) {
+  if (typeof content !== "string") {
+    return "Message content must be text";
+  }
+
+  const trimmed = content.trim();
+
+  if (trimmed.length === 0) {
+    return "Message cannot be empty";
+  }
+
+  if (trimmed.length > 500) {
+    return "Message cannot exceed 500 characters";
+  }
+
+  return null;
+}
+
 function forbidden() {
   return NextResponse.json({ error: "Forbidden" }, { status: 403 });
 }
@@ -14,12 +32,12 @@ export async function POST(req: Request) {
   try {
     const { conversationId, senderId, content } = await req.json();
 
-    if (!conversationId || !senderId || typeof content !== "string") {
-      return NextResponse.json(
-        { error: "conversationId, senderId, and content are required" },
-        { status: 400 }
-      );
+    const validationError = validateMessageContent(content);
+    if (validationError) {
+      return NextResponse.json({ error: validationError }, { status: 400 });
     }
+
+    
 
     const trimmedContent = content.trim();
 
