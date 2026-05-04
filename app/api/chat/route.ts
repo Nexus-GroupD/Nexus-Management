@@ -1,3 +1,5 @@
+export const runtime = "nodejs";
+
 import { NextResponse } from "next/server";
 import { GoogleGenAI } from "@google/genai";
 
@@ -110,4 +112,3 @@ Respond naturally using this data.
     );
   }
 }
-
