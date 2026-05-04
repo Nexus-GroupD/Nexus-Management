@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "@/components/Navbar";
-import { getGreeting } from "@/lib/time";
+import FancyGreeting from "@/components/FancyGreeting";
 
 type Me = { id: number; name: string; dbRole: string; role: string };
 type Shift = { shiftId: number; date: string; startTime: string; endTime: string; personId: number | null };
@@ -88,11 +88,7 @@ export default function Home() {
       <div style={pageStyle}>
 
         {/* Greeting */}
-        <div style={heroStyle}>
-          <p style={greetingStyle}>{getGreeting()},</p>
-          <h1 style={nameStyle}>{me.name}</h1>
-          <span style={roleTagStyle}>{me.dbRole}</span>
-        </div>
+        <FancyGreeting name={me.name} role={me.dbRole} />
 
         <div style={layoutStyle}>
           {/* Calendar */}
@@ -203,13 +199,6 @@ export default function Home() {
 /* ── Styles ── */
 const pageStyle: React.CSSProperties = {
   maxWidth: "900px", margin: "0 auto", padding: "6rem 1.5rem 3rem",
-};
-const heroStyle: React.CSSProperties = { marginBottom: "2rem" };
-const greetingStyle: React.CSSProperties = { margin: "0 0 0.2rem", color: "#64748b", fontSize: "1rem", fontWeight: 500 };
-const nameStyle: React.CSSProperties = { margin: "0 0 0.5rem", fontSize: "2rem", fontWeight: 700, color: "#0f172a" };
-const roleTagStyle: React.CSSProperties = {
-  display: "inline-block", background: "#f1f5f9", color: "#475569",
-  borderRadius: "999px", padding: "0.25rem 0.875rem", fontSize: "0.8rem", fontWeight: 600,
 };
 const layoutStyle: React.CSSProperties = {
   display: "grid", gridTemplateColumns: "1fr 280px", gap: "1.25rem", alignItems: "start",
