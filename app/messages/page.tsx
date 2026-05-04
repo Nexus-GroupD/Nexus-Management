@@ -99,7 +99,7 @@ export default function MessagesPage() {
     </>
   );
 
-  return (
+return (
     <>
       <Navbar pageTitle="Messages" />
       <main style={pageStyle}>
