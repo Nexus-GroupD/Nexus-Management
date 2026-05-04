@@ -63,6 +63,25 @@ db.exec(`
   );
 `);
 
+// If shifts table was created with old camelCase schema, drop and recreate it
+try {
+  const cols = (db.prepare("PRAGMA table_info(shifts)").all() as { name: string }[]).map(c => c.name);
+  if (cols.includes("shiftId") && !cols.includes("shift_ID")) {
+    db.exec("DROP TABLE shifts");
+    db.exec(`
+      CREATE TABLE shifts (
+        shift_ID   INTEGER PRIMARY KEY AUTOINCREMENT,
+        date       TEXT NOT NULL,
+        start_time TEXT NOT NULL,
+        end_time   TEXT NOT NULL,
+        person_ID  INTEGER REFERENCES people(id) ON DELETE SET NULL
+      )
+    `);
+  }
+} catch {
+  // Table doesn't exist yet — handled by CREATE TABLE IF NOT EXISTS above
+}
+
 // Add permissions column to existing installations that predate this migration
 try {
   db.exec("ALTER TABLE custom_roles ADD COLUMN permissions TEXT NOT NULL DEFAULT '[]'");
