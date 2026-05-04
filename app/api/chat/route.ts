@@ -45,11 +45,14 @@ export async function POST(req: Request) {
       systemInstruction: SYSTEM_PROMPT,
     });
 
-    // Build history from all but the last message
-    const history = messages.slice(0, -1).map((m: { role: string; content: string }) => ({
+    // Build history from all but the last message.
+    // Drop any leading model messages — Gemini requires history to start with 'user'.
+    const rawHistory = messages.slice(0, -1).map((m: { role: string; content: string }) => ({
       role: m.role === "user" ? "user" : "model",
       parts: [{ text: m.content }],
     }));
+    const firstUserIdx = rawHistory.findIndex((m: { role: string }) => m.role === "user");
+    const history = firstUserIdx >= 0 ? rawHistory.slice(firstUserIdx) : [];
 
     const chat = model.startChat({ history });
 
