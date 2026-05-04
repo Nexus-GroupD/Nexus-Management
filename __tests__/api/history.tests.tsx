@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 import History from "../../app/history/page";
 
 // Mock Navbar
@@ -22,13 +22,27 @@ jest.mock("@/components/historyTable", () => ({
   },
 }));
 
-describe("History Page (Frontend)", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
+const MOCK_EMPLOYEES = [
+  { id: 1, name: "Alex Rivera" },
+  { id: 2, name: "Jordan Lee" },
+  { id: 3, name: "Sam Patel" },
+];
 
-  it("renders the page title and subtitle", () => {
-    render(<History />);
+// Mock global fetch to return the employee list for /api/people
+beforeEach(() => {
+  jest.clearAllMocks();
+  global.fetch = jest.fn().mockResolvedValue({
+    json: () => Promise.resolve(MOCK_EMPLOYEES),
+  } as any);
+});
+
+afterEach(() => {
+  jest.restoreAllMocks();
+});
+
+describe("History Page (Frontend)", () => {
+  it("renders the page title and subtitle", async () => {
+    await act(async () => { render(<History />); });
 
     expect(screen.getByText("Clock History")).toBeInTheDocument();
     expect(
@@ -36,21 +50,31 @@ describe("History Page (Frontend)", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders Navbar with correct title", () => {
-    render(<History />);
+  it("renders Navbar with correct title", async () => {
+    await act(async () => { render(<History />); });
 
     expect(screen.getByTestId("navbar")).toHaveTextContent("History");
   });
 
-  it("renders employee filter dropdown", () => {
-    render(<History />);
+  it("renders employee filter dropdown", async () => {
+    await act(async () => { render(<History />); });
 
     const select = screen.getByRole("combobox");
     expect(select).toBeInTheDocument();
   });
 
-  it("passes undefined personId when 'All Employees' is selected", () => {
-    render(<History />);
+  it("populates dropdown with employees from /api/people", async () => {
+    await act(async () => { render(<History />); });
+
+    await waitFor(() => {
+      expect(screen.getByText("Alex Rivera")).toBeInTheDocument();
+      expect(screen.getByText("Jordan Lee")).toBeInTheDocument();
+      expect(screen.getByText("Sam Patel")).toBeInTheDocument();
+    });
+  });
+
+  it("passes undefined personId when 'All Employees' is selected", async () => {
+    await act(async () => { render(<History />); });
 
     expect(mockHistoryTable).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -60,11 +84,15 @@ describe("History Page (Frontend)", () => {
     );
   });
 
-  it("updates personId when a different employee is selected", () => {
-    render(<History />);
+  it("updates personId when a different employee is selected", async () => {
+    await act(async () => { render(<History />); });
+
+    // Wait for employees to load so handleSelect validation passes
+    await waitFor(() => {
+      expect(screen.getByText("Jordan Lee")).toBeInTheDocument();
+    });
 
     const select = screen.getByRole("combobox");
-
     fireEvent.change(select, { target: { value: "2" } });
 
     expect(mockHistoryTable).toHaveBeenLastCalledWith(
@@ -75,8 +103,8 @@ describe("History Page (Frontend)", () => {
     );
   });
 
-  it("renders HistoryTable component", () => {
-    render(<History />);
+  it("renders HistoryTable component", async () => {
+    await act(async () => { render(<History />); });
 
     expect(screen.getByTestId("history-table")).toBeInTheDocument();
   });

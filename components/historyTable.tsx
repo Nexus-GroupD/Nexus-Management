@@ -7,9 +7,11 @@ import { formatDate, formatTime, formatDuration } from '@/lib/time';
 interface HistoryTableProps {
   personId?: number;
   limit?: number;
+  /** Map of person_ID → display name, used when showing all employees. */
+  employeeNames?: Record<number, string>;
 }
 
-const HistoryTable: React.FC<HistoryTableProps> = ({ personId, limit = 20 }) => {
+const HistoryTable: React.FC<HistoryTableProps> = ({ personId, limit = 20, employeeNames = {} }) => {
   const [entries, setEntries] = useState<ClockEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -35,12 +37,14 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ personId, limit = 20 }) => 
   if (error)   return <p className="ht-state ht-error">{error}</p>;
   if (entries.length === 0) return <p className="ht-state">No history found.</p>;
 
+  const showEmployeeCol = !personId;
+
   return (
     <div className="ht-wrapper">
       <table className="ht-table">
         <thead>
           <tr>
-            {!personId && <th>Employee</th>}
+            {showEmployeeCol && <th>Employee</th>}
             <th>Date</th>
             <th>Clock In</th>
             <th>Clock Out</th>
@@ -50,7 +54,9 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ personId, limit = 20 }) => 
         <tbody>
           {entries.map(e => (
             <tr key={e.id}>
-              {!personId && <td>#{e.person_ID}</td>}
+              {showEmployeeCol && (
+                <td>{employeeNames[e.person_ID] ?? `Employee #${e.person_ID}`}</td>
+              )}
               <td>{formatDate(e.date)}</td>
               <td>{formatTime(e.clock_in)}</td>
               <td>{e.clock_out ? formatTime(e.clock_out) : <span className="ht-active">Active</span>}</td>
@@ -75,4 +81,3 @@ const HistoryTable: React.FC<HistoryTableProps> = ({ personId, limit = 20 }) => 
 };
 
 export default HistoryTable;
-

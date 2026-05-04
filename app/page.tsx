@@ -150,7 +150,14 @@ export default function Home() {
                   selectedShifts.map((s) => (
                     <div key={s.shiftId} style={shiftPillStyle}>
                       <span style={shiftDotInlineStyle} />
-                      {s.startTime} – {s.endTime}
+                      <div>
+                        <div>{s.startTime} – {s.endTime}</div>
+                        {s.employee?.name && (
+                          <div style={{ fontSize: "0.75rem", color: "#64748b", marginTop: "0.1rem" }}>
+                            {s.employee.name}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   ))
                 )}
