@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import Chatbot from '@/components/ChatBot';
+import ChatBot from '@/components/ChatBot';
 
 export const metadata: Metadata = {
   title: 'Nexus Management',
@@ -15,7 +15,7 @@ export default function RootLayout({
     <html lang="en">
       <body style={{ margin: 0 }}>
         {children}
-        <Chatbot />
+        <ChatBot />
       </body>
     </html>
   );
