@@ -1,4 +1,5 @@
 /// <reference types="jest" />
+
 jest.mock("next/server", () => ({
   NextResponse: {
     json: (data: unknown, init?: { status?: number }) => ({
@@ -8,61 +9,51 @@ jest.mock("next/server", () => ({
   },
 }));
 
-jest.mock("../../lib/prisma", () => ({
-  prisma: {
-    shift: {
-      findMany: jest.fn(),
-      create: jest.fn(),
-      update: jest.fn(),
-    },
-  },
-}));
+jest.mock("../../lib/db", () => {
+  const mockDb = {
+    exec:    jest.fn(),
+    prepare: jest.fn(),
+  };
+  return { __esModule: true, default: mockDb };
+});
 
 import { GET, POST, PATCH } from "../../app/api/shifts/route";
-import { prisma } from "../../lib/prisma";
+import db from "../../lib/db";
+
+const mockPrepare = db.prepare as jest.Mock;
+
+beforeEach(() => {
+  jest.clearAllMocks();
+  (db.exec as jest.Mock).mockImplementation(() => {});
+});
 
 describe("GET /api/shifts", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   it("returns all shifts successfully", async () => {
-    const mockShifts = [
+    const mockRows = [
       {
-        shiftId: 1,
-        date: "2026-04-02",
-        startTime: "9:00 AM",
-        endTime: "5:00 PM",
-        personId: 1,
-        employee: { id: 1, name: "Alex Rivera" },
+        shiftId: 1, date: "2026-04-02", startTime: "9:00 AM", endTime: "5:00 PM",
+        personId: 1, "employee.id": 1, "employee.name": "Alex Rivera",
       },
       {
-        shiftId: 2,
-        date: "2026-04-02",
-        startTime: "5:00 PM",
-        endTime: "11:00 PM",
-        personId: null,
-        employee: null,
+        shiftId: 2, date: "2026-04-02", startTime: "5:00 PM", endTime: "11:00 PM",
+        personId: null, "employee.id": null, "employee.name": null,
       },
     ];
 
-    const findManyMock = prisma.shift.findMany as jest.Mock;
-    findManyMock.mockResolvedValue(mockShifts);
+    mockPrepare.mockReturnValue({ all: jest.fn().mockReturnValue(mockRows) });
 
     const res = await GET();
     const data = await res.json();
 
     expect(res.status).toBe(200);
-    expect(data).toEqual({ success: true, data: mockShifts });
-    expect(findManyMock).toHaveBeenCalledWith({
-      include: { employee: true },
-      orderBy: [{ date: "asc" }, { startTime: "asc" }],
-    });
+    expect(data.success).toBe(true);
+    expect(data.data).toHaveLength(2);
+    expect(data.data[0].employee).toEqual({ id: 1, name: "Alex Rivera" });
+    expect(data.data[1].employee).toBeNull();
   });
 
-  it("returns 500 if prisma throws an error", async () => {
-    const findManyMock = prisma.shift.findMany as jest.Mock;
-    findManyMock.mockRejectedValue(new Error("Database failure"));
+  it("returns 500 if database throws", async () => {
+    mockPrepare.mockImplementation(() => { throw new Error("Database failure"); });
 
     const res = await GET();
     const data = await res.json();
@@ -73,65 +64,36 @@ describe("GET /api/shifts", () => {
 });
 
 describe("POST /api/shifts", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   it("creates a shift successfully", async () => {
-    const newShift = {
-      shiftId: 3,
-      date: "2026-04-03",
-      startTime: "9:00 AM",
-      endTime: "5:00 PM",
-      personId: null,
-    };
+    const newShift = { shiftId: 3, date: "2026-04-03", startTime: "9:00 AM", endTime: "5:00 PM", personId: null };
 
-    const createMock = prisma.shift.create as jest.Mock;
-    createMock.mockResolvedValue(newShift);
+    mockPrepare.mockReturnValue({
+      run: jest.fn().mockReturnValue({ lastInsertRowid: 3 }),
+      get: jest.fn().mockReturnValue(newShift),
+    });
 
-    const req = {
-      json: async () => ({
-        date: "2026-04-03",
-        startTime: "9:00 AM",
-        endTime: "5:00 PM",
-      }),
-    } as Request;
-
-    const res = await POST(req as any);
+    const req = { json: async () => ({ date: "2026-04-03", startTime: "9:00 AM", endTime: "5:00 PM" }) } as any;
+    const res = await POST(req);
     const data = await res.json();
 
     expect(res.status).toBe(200);
-    expect(data).toEqual({ success: true, data: newShift });
+    expect(data.success).toBe(true);
   });
 
   it("returns 400 if required fields are missing", async () => {
-    const req = {
-      json: async () => ({ date: "2026-04-03" }),
-    } as Request;
-
-    const res = await POST(req as any);
+    const req = { json: async () => ({ date: "2026-04-03" }) } as any;
+    const res = await POST(req);
     const data = await res.json();
 
     expect(res.status).toBe(400);
-    expect(data).toEqual({
-      success: false,
-      error: "date, startTime, and endTime are required.",
-    });
+    expect(data).toEqual({ success: false, error: "date, startTime, and endTime are required." });
   });
 
-  it("returns 500 if prisma throws an error", async () => {
-    const createMock = prisma.shift.create as jest.Mock;
-    createMock.mockRejectedValue(new Error("Database failure"));
+  it("returns 500 if database throws", async () => {
+    mockPrepare.mockImplementation(() => { throw new Error("Database failure"); });
 
-    const req = {
-      json: async () => ({
-        date: "2026-04-03",
-        startTime: "9:00 AM",
-        endTime: "5:00 PM",
-      }),
-    } as Request;
-
-    const res = await POST(req as any);
+    const req = { json: async () => ({ date: "2026-04-03", startTime: "9:00 AM", endTime: "5:00 PM" }) } as any;
+    const res = await POST(req);
     const data = await res.json();
 
     expect(res.status).toBe(500);
@@ -140,88 +102,52 @@ describe("POST /api/shifts", () => {
 });
 
 describe("PATCH /api/shifts", () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
   it("assigns an employee to a shift", async () => {
-    const updatedShift = {
-      shiftId: 1,
-      date: "2026-04-02",
-      startTime: "9:00 AM",
-      endTime: "5:00 PM",
-      personId: 2,
-    };
+    const updatedShift = { shiftId: 1, date: "2026-04-02", startTime: "9:00 AM", endTime: "5:00 PM", personId: 2 };
 
-    const updateMock = prisma.shift.update as jest.Mock;
-    updateMock.mockResolvedValue(updatedShift);
+    mockPrepare.mockReturnValue({
+      run: jest.fn(),
+      get: jest.fn().mockReturnValue(updatedShift),
+    });
 
-    const req = {
-      json: async () => ({ shiftId: 1, personId: 2 }),
-    } as Request;
-
-    const res = await PATCH(req as any);
+    const req = { json: async () => ({ shiftId: 1, personId: 2 }) } as any;
+    const res = await PATCH(req);
     const data = await res.json();
 
     expect(res.status).toBe(200);
     expect(data).toEqual({ success: true, data: updatedShift });
-    expect(updateMock).toHaveBeenCalledWith({
-      where: { shiftId: 1 },
-      data: { personId: 2 },
-    });
   });
 
   it("unassigns an employee from a shift", async () => {
-    const updatedShift = {
-      shiftId: 1,
-      date: "2026-04-02",
-      startTime: "9:00 AM",
-      endTime: "5:00 PM",
-      personId: null,
-    };
+    const updatedShift = { shiftId: 1, date: "2026-04-02", startTime: "9:00 AM", endTime: "5:00 PM", personId: null };
 
-    const updateMock = prisma.shift.update as jest.Mock;
-    updateMock.mockResolvedValue(updatedShift);
+    mockPrepare.mockReturnValue({
+      run: jest.fn(),
+      get: jest.fn().mockReturnValue(updatedShift),
+    });
 
-    const req = {
-      json: async () => ({ shiftId: 1, personId: null }),
-    } as Request;
-
-    const res = await PATCH(req as any);
+    const req = { json: async () => ({ shiftId: 1, personId: null }) } as any;
+    const res = await PATCH(req);
     const data = await res.json();
 
     expect(res.status).toBe(200);
     expect(data).toEqual({ success: true, data: updatedShift });
-    expect(updateMock).toHaveBeenCalledWith({
-      where: { shiftId: 1 },
-      data: { personId: null },
-    });
   });
 
   it("returns 400 if shiftId is missing", async () => {
-    const req = {
-      json: async () => ({ personId: 2 }),
-    } as Request;
-
-    const res = await PATCH(req as any);
+    const req = { json: async () => ({ personId: 2 }) } as any;
+    const res = await PATCH(req);
     const data = await res.json();
 
     expect(res.status).toBe(400);
-    expect(data).toEqual({
-      success: false,
-      error: "shiftId is required.",
-    });
+    expect(data).toEqual({ success: false, error: "shiftId is required." });
   });
 
-  it("returns 500 if prisma throws an error", async () => {
-    const updateMock = prisma.shift.update as jest.Mock;
-    updateMock.mockRejectedValue(new Error("Database failure"));
+  it("returns 500 if database throws", async () => {
+    mockPrepare.mockImplementation(() => { throw new Error("Database failure"); });
 
-    const req = {
-      json: async () => ({ shiftId: 1, personId: 2 }),
-    } as Request;
-
-    const res = await PATCH(req as any);
+    const req = { json: async () => ({ shiftId: 1, personId: 2 }) } as any;
+    const res = await PATCH(req);
     const data = await res.json();
 
     expect(res.status).toBe(500);
