@@ -41,18 +41,26 @@ export async function POST(req: Request) {
     const genAI = new GoogleGenerativeAI(apiKey);
 
     const model = genAI.getGenerativeModel({
-      model: "gemini-2.5-flash",
+      model: "gemini-2.0-flash",
       systemInstruction: SYSTEM_PROMPT,
     });
 
-    // Build history from all but the last message.
-    // Drop any leading model messages — Gemini requires history to start with 'user'.
-    const rawHistory = messages.slice(0, -1).map((m: { role: string; content: string }) => ({
-      role: m.role === "user" ? "user" : "model",
-      parts: [{ text: m.content }],
-    }));
-    const firstUserIdx = rawHistory.findIndex((m: { role: string }) => m.role === "user");
-    const history = firstUserIdx >= 0 ? rawHistory.slice(firstUserIdx) : [];
+    // Build history: exclude last message (that's the new one we're sending),
+    // and skip any leading assistant/model messages — Gemini requires history
+    // to start with a user message.
+    const history = messages
+      .slice(0, -1)
+      .filter((m: { role: string; content: string }) => m.role === "user" || m.role === "model" || m.role === "assistant")
+      .map((m: { role: string; content: string }) => ({
+        role: m.role === "user" ? "user" : "model",
+        parts: [{ text: m.content }],
+      }))
+      .reduce((acc: any[], msg: any, _i: number, arr: any[]) => {
+        // Drop leading model messages — Gemini requires first history item to be user
+        if (acc.length === 0 && msg.role === "model") return acc;
+        acc.push(msg);
+        return acc;
+      }, []);
 
     const chat = model.startChat({ history });
 
