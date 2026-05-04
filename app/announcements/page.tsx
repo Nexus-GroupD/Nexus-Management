@@ -34,7 +34,7 @@ export default function AnnouncementsPage() {
     fetch("/api/me")
       .then((res) => res.json())
       .then((data) => {
-        const perms = data.permissions || [];
+        const perms = data?.permissions || [];
         setCanCreate(perms.includes("announcements.create"));
         setCanDelete(perms.includes("announcements.delete"));
       });
