@@ -8,6 +8,13 @@ function forbidden() {
   return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
 }
 
+function parsePositiveInt(value: unknown): number | null {
+  const n = Number(value);
+  return Number.isInteger(n) && n > 0 ? n : null;
+}
+
+// Any logged-in user can read shifts — employees need to see their own schedule,
+// and the client-side filters down to just their shifts after fetching.
 export async function GET(req: NextRequest) {
   if (!requireAuth(req)) return forbidden();
   try {
@@ -36,12 +43,14 @@ export async function GET(req: NextRequest) {
   }
 }
 
+// Creating shifts is restricted to managers — only roles with schedule.edit
+// (e.g. Manager) can add new slots to the schedule.
 export async function POST(req: NextRequest) {
   if (!hasPermission(req, "schedule.edit")) return forbidden();
   try {
     const body = await req.json();
     const { date, startTime, endTime } = body;
-    const personId = body.personId != null ? Number(body.personId) : null;
+    const personId = body.personId != null ? parsePositiveInt(body.personId) : null;
 
     if (!date || !startTime || !endTime) {
       return NextResponse.json(
@@ -49,7 +58,7 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    if (personId !== null && (!Number.isInteger(personId) || personId <= 0)) {
+    if (body.personId != null && personId === null) {
       return NextResponse.json(
         { success: false, error: "Invalid personId." },
         { status: 400 }
@@ -66,11 +75,13 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// Assigning an employee to a shift uses a separate permission from creating shifts —
+// team leads can assign without being able to create or delete shifts entirely.
 export async function PATCH(req: NextRequest) {
   if (!hasPermission(req, "schedule.assign_shifts")) return forbidden();
   try {
     const body = await req.json();
-    const personId = body.personId != null ? Number(body.personId) : null;
+    const personId = body.personId != null ? parsePositiveInt(body.personId) : null;
 
     if (body.shiftId == null) {
       return NextResponse.json(
@@ -79,14 +90,14 @@ export async function PATCH(req: NextRequest) {
       );
     }
 
-    const shiftId = Number(body.shiftId);
-    if (!Number.isInteger(shiftId) || shiftId <= 0) {
+    const shiftId = parsePositiveInt(body.shiftId);
+    if (shiftId === null) {
       return NextResponse.json(
         { success: false, error: "Invalid shiftId." },
         { status: 400 }
       );
     }
-    if (personId !== null && (!Number.isInteger(personId) || personId <= 0)) {
+    if (body.personId != null && personId === null) {
       return NextResponse.json(
         { success: false, error: "Invalid personId." },
         { status: 400 }
