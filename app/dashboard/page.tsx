@@ -1,41 +1,46 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import ClockButtons from '@/components/ClockButtons';
 import TodaySummary from '@/components/TodaySummary';
 import WeeklySummary from '@/components/weeklySummary';
 import type { ClockStatus } from '@/type';
 
-// In a real app this would come from an auth session.
-// For now we let the user pick their ID to demo the functionality.
-const DEMO_EMPLOYEES = [
-  { id: 1, name: 'Alex Rivera',  role: 'Manager' },
-  { id: 2, name: 'Jordan Lee',   role: 'Employee' },
-  { id: 3, name: 'Sam Patel',    role: 'Employee' },
-  { id: 4, name: 'Casey Morgan', role: 'Employee' },
-];
+type Employee = { id: number; name: string; role: string };
 
 export default function Dashboard() {
-  const [selectedId, setSelectedId] = useState<number>(1);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
   const [clockStatus, setClockStatus] = useState<ClockStatus>('clocked_out');
 
-  const employee = DEMO_EMPLOYEES.find(e => e.id === selectedId)!;
+  useEffect(() => {
+    fetch('/api/people')
+      .then(r => r.json())
+      .then((data: Employee[]) => {
+        if (Array.isArray(data) && data.length > 0) {
+          setEmployees(data);
+          setSelectedId(data[0].id);
+        }
+      });
+  }, []);
+
+  const employee = employees.find(e => e.id === selectedId) ?? null;;
 
   return (
     <>
       <Navbar pageTitle="Dashboard" />
       <main className="dash-page">
 
-        {/* Employee selector (replaces auth for demo) */}
+        {/* Employee selector */}
         <div className="dash-selector">
           <label className="selector-label">Viewing as:</label>
           <div className="selector-pills">
-            {DEMO_EMPLOYEES.map(emp => (
+            {employees.map(emp => (
               <button
                 key={emp.id}
                 className={`selector-pill ${selectedId === emp.id ? 'active' : ''}`}
-                onClick={() => setSelectedId(emp.id)}
+                onClick={() => { setSelectedId(emp.id); setClockStatus('clocked_out'); }}
               >
                 {emp.name}
               </button>
@@ -45,10 +50,10 @@ export default function Dashboard() {
 
         {/* Header card */}
         <div className="dash-hero">
-          <div className="dash-avatar">{employee.name[0]}</div>
+          <div className="dash-avatar">{employee ? employee.name[0] : '?'}</div>
           <div>
-            <h2 className="dash-name">{employee.name}</h2>
-            <span className="dash-role">{employee.role}</span>
+            <h2 className="dash-name">{employee?.name ?? '—'}</h2>
+            <span className="dash-role">{employee?.role ?? ''}</span>
           </div>
           <div className={`dash-status ${clockStatus}`}>
             {clockStatus === 'clocked_in' ? '● Clocked In' : '○ Clocked Out'}
@@ -56,26 +61,30 @@ export default function Dashboard() {
         </div>
 
         {/* Clock buttons */}
-        <section className="dash-section">
-          <h3 className="section-title">Time Tracking</h3>
-          <ClockButtons
-            personId={selectedId}
-            initialStatus={clockStatus}
-            onStatusChange={setClockStatus}
-          />
-        </section>
+        {selectedId !== null && (
+          <section className="dash-section">
+            <h3 className="section-title">Time Tracking</h3>
+            <ClockButtons
+              personId={selectedId}
+              initialStatus={clockStatus}
+              onStatusChange={setClockStatus}
+            />
+          </section>
+        )}
 
         {/* Today summary & weekly chart */}
-        <div className="dash-grid">
-          <section className="dash-section">
-            <h3 className="section-title">Today's Entries</h3>
-            <TodaySummary personId={selectedId} />
-          </section>
-          <section className="dash-section">
-            <h3 className="section-title">Weekly Overview</h3>
-            <WeeklySummary personId={selectedId} />
-          </section>
-        </div>
+        {selectedId !== null && (
+          <div className="dash-grid">
+            <section className="dash-section">
+              <h3 className="section-title">Today's Entries</h3>
+              <TodaySummary personId={selectedId} />
+            </section>
+            <section className="dash-section">
+              <h3 className="section-title">Weekly Overview</h3>
+              <WeeklySummary personId={selectedId} />
+            </section>
+          </div>
+        )}
       </main>
 
       <style>{`
